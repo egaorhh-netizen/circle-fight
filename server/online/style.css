@@ -277,3 +277,17 @@ body.light .shield-bar-bg { background: rgba(0,0,0,0.1); }
   display: flex; justify-content: space-around; align-items: flex-start;
   width: 100%; max-width: 800px; padding: 8px 20px; gap: 20px;
 }
+
+/* Menu glow behind title */
+#menu h1::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px; height: 120px;
+  background: radial-gradient(ellipse, rgba(80,120,255,0.35) 0%, transparent 70%);
+  filter: blur(20px);
+  z-index: -1;
+  pointer-events: none;
+}
+#menu h1 { position: relative; }
