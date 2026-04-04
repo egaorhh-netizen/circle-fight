@@ -169,11 +169,10 @@ function processAction(state, idx, action) {
     const dist = Math.hypot(dx, dy);
     const angleDiff = Math.abs(normalizeAngle(Math.atan2(dy, dx) - p.angle));
     if (dist <= ATTACK_RANGE && angleDiff < Math.PI/2.5 && opp.iframeTimer <= 0) {
-      const oppInp = state.inputs[1-idx] || {};
-      const oppBlocking = !!oppInp.block && (opp.shieldHp == null || opp.shieldHp > 0);
+      const oppBlocking = opp.blocking && (opp.shieldHp == null || opp.shieldHp > 0);
       if (oppBlocking) {
         opp.shieldHp = Math.max(0, (opp.shieldHp ?? 5) - 1);
-      } else {
+      } else if (!opp.blocking) {
         opp.hp = Math.max(0, opp.hp - ATTACK_DMG);
         opp.iframeTimer = IFRAME_TIME;
         opp.x = clamp(opp.x + (dx/dist)*KNOCKBACK, RADIUS, CANVAS_W-RADIUS);

@@ -102,7 +102,8 @@ function buildInventory() {
 let canvas,ctx,animId,lastTime=0,keys={},player,bot,gameRunning=false,particles=[],orbs=[];
 
 function botStats(){
-  const tier=Math.floor(ratingBot/100),tc=Math.min(tier,5),ag=tier>=3;
+  const tier=Math.min(Math.floor(ratingBot/100), 15); // макс тир 15 = 1500 ммр
+  const tc=Math.min(tier,5),ag=tier>=3;
   return{speed:2+tc,attackCd:Math.max(300,1000-tier*30),reactionTime:Math.max(50,600-tier*20),
     blockChance:Math.min(0.95,0.1+tier*0.05),blockDuration:Math.min(2000,200+tier*80),
     damage:8+tc,retreatHp:ag?0:0.15,turtlePatience:Math.max(300,2000-tier*50),
@@ -764,6 +765,7 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 let masterVolume = parseFloat(localStorage.getItem("cf_volume") ?? "0.7");
 let soundEnabled = localStorage.getItem("cf_sound") !== "0";
+let gameSoundEnabled = localStorage.getItem("cf_gamesound") !== "0";
 
 function getAudio(){ if(!audioCtx) audioCtx=new AudioCtx(); return audioCtx; }
 
@@ -778,8 +780,18 @@ function toggleSound(){
   document.getElementById("sound-btn").textContent=soundEnabled?"Вкл":"Выкл";
 }
 
+function toggleGameSound(){
+  gameSoundEnabled=!gameSoundEnabled;
+  localStorage.setItem("cf_gamesound", gameSoundEnabled?"1":"0");
+  document.getElementById("gamesound-btn").textContent=gameSoundEnabled?"Вкл":"Выкл";
+}
+
 function playSound(type){
-  if(!soundEnabled) return;
+  // Игровые звуки
+  const gameTypes=["hit","block","shieldBreak","dash","orb","spin","win","lose"];
+  if(gameTypes.includes(type) && !gameSoundEnabled) return;
+  // Звуки меню
+  if(type==="click" && !soundEnabled) return;
   try{
     const ac=getAudio();
     const now=ac.currentTime;
@@ -852,6 +864,8 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(vs){ vs.value=Math.round(masterVolume*100); document.getElementById("volume-val").textContent=Math.round(masterVolume*100)+"%"; }
   const sb=document.getElementById("sound-btn");
   if(sb) sb.textContent=soundEnabled?"Вкл":"Выкл";
+  const gsb=document.getElementById("gamesound-btn");
+  if(gsb) gsb.textContent=gameSoundEnabled?"Вкл":"Выкл";
 });
 
 document.addEventListener("click", e=>{
