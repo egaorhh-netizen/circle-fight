@@ -140,6 +140,7 @@ function makePlayer(x, y, angle, data) {
     hp: MAX_HP,
     attackTimer: 0, iframeTimer: 0,
     attackPhase: null, attackPhaseTimer: 0, attackAnim: 0,
+    attackPhase: null, attackPhaseTimer: 0, attackAnim: 0,
     blocking: false, blockHoldTime: 0,
     dashUsed: false, dashTimer: 0, dashVx: 0, dashVy: 0,
     orbUsed: false,
@@ -157,6 +158,7 @@ function processAction(state, idx, action) {
   if (action.type === "attack") {
     if (p.attackTimer > 0 || p.blocking) return;
     p.attackTimer = 600;
+    p.attackPhase = 'windup'; p.attackPhaseTimer = 100; p.attackAnim = 1;
     p.attackPhase = "windup"; p.attackPhaseTimer = 100; p.attackAnim = 1;
     const dx = opp.x - p.x, dy = opp.y - p.y;
     const dist = Math.hypot(dx, dy);
@@ -230,6 +232,18 @@ function tickState(state) {
 
     if (p.attackTimer  > 0) p.attackTimer  -= dt;
     if (p.iframeTimer  > 0) p.iframeTimer  -= dt;
+
+    // Attack animation tick
+    if (p.attackPhase) {
+      p.attackPhaseTimer -= dt;
+      if (p.attackPhase === 'windup') {
+        p.attackAnim = 1 - Math.max(0, p.attackPhaseTimer) / 120;
+        if (p.attackPhaseTimer <= 0) { p.attackPhase = 'swing'; p.attackPhaseTimer = 150; }
+      } else if (p.attackPhase === 'swing') {
+        p.attackAnim = 1 - (1 - Math.max(0, p.attackPhaseTimer) / 150) * 1.5;
+        if (p.attackPhaseTimer <= 0) { p.attackPhase = null; p.attackAnim = 0; }
+      }
+    }
     if (p.spinTimer    > 0) {
       p.spinTimer -= dt;
       const opp = state.players[1-i];

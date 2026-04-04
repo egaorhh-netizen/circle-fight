@@ -384,7 +384,20 @@ function updateOnlineSkillBar(){
 }
 function sendOnlineInput(){
   if(!onlineRunning)return;
-  socket.emit("input",{roomId,input:{up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),block:!!onlineKeys["KeyF"],angle:myAngle}});
+  const inp={up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),block:!!onlineKeys["KeyF"],angle:myAngle};
+  socket.emit("input",{roomId,input:inp});
+  // Клиент-сайд предсказание — двигаем себя локально
+  if(localState&&mySide!==null){
+    const me=localState.players[mySide];
+    const spd=inp.block?PLAYER_SPEED*.5:PLAYER_SPEED;
+    if(inp.up)me.y=clamp(me.y-spd,RADIUS,CANVAS_H-RADIUS);
+    if(inp.down)me.y=clamp(me.y+spd,RADIUS,CANVAS_H-RADIUS);
+    if(inp.left)me.x=clamp(me.x-spd,RADIUS,CANVAS_W-RADIUS);
+    if(inp.right)me.x=clamp(me.x+spd,RADIUS,CANVAS_W-RADIUS);
+    me.angle=myAngle;
+    me.blocking=inp.block;
+    renderOnline(localState);
+  }
   requestAnimationFrame(sendOnlineInput);
 }
 
