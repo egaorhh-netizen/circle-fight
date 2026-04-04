@@ -1,4 +1,4 @@
-// ---- CIRCLE FIGHT — UNIFIED CLIENT ----
+﻿// ---- CIRCLE FIGHT — UNIFIED CLIENT ----
 const CANVAS_W=760,CANVAS_H=480,RADIUS=28,SWORD_LEN=44,SWORD_W=6,MAX_HP=100;
 const ATTACK_RANGE=RADIUS*2+SWORD_LEN+10,ATTACK_DMG=12,ATTACK_CD=600;
 const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
@@ -30,8 +30,8 @@ updateRatingDisplay();
 function updateRatingDisplay() {
   const b = document.getElementById("rating-bot-display");
   const o = document.getElementById("rating-online-display");
-  if (b) b.textContent = "🤖 MMR: " + ratingBot;
-  if (o) o.textContent = "🌐 MMR: " + ratingOnline;
+  if (b) b.textContent = "🤖БотБотОнлайн MMR: " + ratingBot;
+  if (o) o.textContent = "🌐БотБотОнлайн MMR: " + ratingOnline;
 }
 
 function editNickname() {
@@ -294,7 +294,7 @@ function endBotGame(won){
   else ratingBot=Math.max(ratingBot-RATING_PER_WIN,0);
   saveAll();hide("game-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
-  document.getElementById("gameover-rating").textContent="🤖 MMR: "+ratingBot;
+  document.getElementById("gameover-rating").textContent="🤖БотБотОнлайн MMR: "+ratingBot;
   playSound(won?"win":"lose");
   document.getElementById("gameover-again").onclick=()=>{hide("gameover");startBotGame();};
 }
@@ -376,7 +376,7 @@ socket.on("gameOver",({won})=>{
   else ratingOnline=Math.max(ratingOnline-RATING_PER_WIN,0);
   saveAll();hide("online-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
-  document.getElementById("gameover-rating").textContent="🌐 MMR: "+ratingOnline;
+  document.getElementById("gameover-rating").textContent="🌐БотБотОнлайн MMR: "+ratingOnline;
   document.getElementById("gameover-again").onclick=()=>{hide("gameover");findMatch();};
 });
 socket.on("opponentLeft",()=>{
@@ -384,7 +384,7 @@ socket.on("opponentLeft",()=>{
   ratingOnline=Math.min(ratingOnline+RATING_PER_WIN,MAX_RATING);saveAll();
   hide("online-screen");show("gameover");
   document.getElementById("gameover-text").textContent="Соперник вышел. Победа!";
-  document.getElementById("gameover-rating").textContent="🌐 MMR: "+ratingOnline;
+  document.getElementById("gameover-rating").textContent="🌐БотБотОнлайн MMR: "+ratingOnline;
   document.getElementById("gameover-again").onclick=()=>{hide("gameover");findMatch();};
 });
 
@@ -875,3 +875,5 @@ document.addEventListener("DOMContentLoaded",()=>{
 document.addEventListener("click", e=>{
   if(e.target.tagName==="BUTTON") playSound("click");
 });
+
+
