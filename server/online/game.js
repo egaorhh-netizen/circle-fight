@@ -360,9 +360,17 @@ socket.on("state",(state)=>{
   // Синхронизируем localMe — позиция с сервера (интерполяция), анимации локальные
   if(localMe&&mySide!==null){
     const srv=state.players[mySide];
-    // Плавно двигаем к серверной позиции
-    localMe.x += (srv.x - localMe.x) * 0.6;
-    localMe.y += (srv.y - localMe.y) * 0.6;
+    // Корректируем позицию только при большом расхождении
+    const drift=Math.hypot(localMe.x-srv.x, localMe.y-srv.y);
+    if(drift>80){
+      // Резкая коррекция — сильно расошлись
+      localMe.x=srv.x; localMe.y=srv.y;
+    } else if(drift>20){
+      // Мягкая коррекция
+      localMe.x+=(srv.x-localMe.x)*0.15;
+      localMe.y+=(srv.y-localMe.y)*0.15;
+    }
+    // Всегда синхронизируем важные данные
     localMe.hp=srv.hp;
     localMe.iframeTimer=srv.iframeTimer;
     localMe.dashTimer=srv.dashTimer;
@@ -492,8 +500,19 @@ function sendOnlineInput(){
   };
   socket.emit("input",{roomId,input:inp});
 
-  // Только анимации локально, позиция — с сервера
+  // Предсказание — двигаем себя локально мгновенно
   if(localMe){
+    const spd=inp.block?PLAYER_SPEED*0.5:PLAYER_SPEED;
+    if(localMe.dashTimer>0){
+      localMe.dashTimer-=dt;
+      localMe.x=clamp(localMe.x+localMe.dashVx,RADIUS,CANVAS_W-RADIUS);
+      localMe.y=clamp(localMe.y+localMe.dashVy,RADIUS,CANVAS_H-RADIUS);
+    } else {
+      if(inp.up)   localMe.y=clamp(localMe.y-spd,RADIUS,CANVAS_H-RADIUS);
+      if(inp.down) localMe.y=clamp(localMe.y+spd,RADIUS,CANVAS_H-RADIUS);
+      if(inp.left) localMe.x=clamp(localMe.x-spd,RADIUS,CANVAS_W-RADIUS);
+      if(inp.right)localMe.x=clamp(localMe.x+spd,RADIUS,CANVAS_W-RADIUS);
+    }
     localMe.angle=myAngle;
     localMe.blocking=inp.block;
     if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
@@ -512,11 +531,10 @@ function sendOnlineInput(){
     if(fv)fv.textContent="FPS: "+currentFps;
   }
 
-  // Рендер
   if(localState&&mySide!==null){
-    const opp = getInterpolatedOpp() || localState.players[1-mySide];
-    const me = localMe || localState.players[mySide];
-    renderOnline(me, opp, localState.orbs);
+    const opp=getInterpolatedOpp()||localState.players[1-mySide];
+    const me=localMe||localState.players[mySide];
+    renderOnline(me,opp,localState.orbs);
   }
 
   requestAnimationFrame(sendOnlineInput);
