@@ -348,8 +348,10 @@ function startOnlineGame(){
   sendOnlineInput();
 }
 function stopOnlineGame(){
+  onlineRunning=false;
   if(onlineCanvas){onlineCanvas.removeEventListener("mousemove",onOnlineMouseMove);onlineCanvas.removeEventListener("mousedown",onOnlineMouseDown);}
   document.removeEventListener("keydown",onOnlineKeyDown);document.removeEventListener("keyup",onOnlineKeyUp);
+  onlineKeys={};
 }
 
 let onlineKeys={};
