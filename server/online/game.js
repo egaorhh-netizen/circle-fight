@@ -460,12 +460,15 @@ function onOnlineMouseMove(e){
   const scaleX=CANVAS_W/r.width, scaleY=CANVAS_H/r.height;
   lastMouseX=(e.clientX-r.left)*scaleX;
   lastMouseY=(e.clientY-r.top)*scaleY;
-  updateOnlineAngle();
+  const px=localMe?localMe.x:(localState?.players[mySide]?.x||CANVAS_W/2);
+  const py=localMe?localMe.y:(localState?.players[mySide]?.y||CANVAS_H/2);
+  myAngle=Math.atan2(lastMouseY-py, lastMouseX-px);
+  if(localMe)localMe.angle=myAngle;
   socket.emit("action",{roomId,action:{type:"angle",angle:myAngle}});
 }
 
 function updateOnlineAngle(){
-  if(!localMe)return;
+  if(!localMe||(!lastMouseX&&!lastMouseY))return;
   myAngle=Math.atan2(lastMouseY-localMe.y, lastMouseX-localMe.x);
   localMe.angle=myAngle;
 }
@@ -518,8 +521,6 @@ function sendOnlineInput(){
 
   // Предсказание — двигаем себя локально мгновенно
   if(localMe){
-    // Пересчитываем угол каждый кадр от актуальной позиции
-    updateOnlineAngle();
     const spd=inp.block?PLAYER_SPEED*0.5:PLAYER_SPEED;
     if(localMe.dashTimer>0){
       localMe.dashTimer-=dt;
