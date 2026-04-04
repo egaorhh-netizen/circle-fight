@@ -297,6 +297,32 @@ let myDashUsed=false,myOrbUsed=false,mySpinUsed=false,myAngle=0;
 let searchInterval=null,searchSeconds=0;
 let opponentNickname="Соперник";
 
+// FPS / Ping
+let showFps=localStorage.getItem("cf_showfps")==="1";
+let fpsFrames=0,fpsLast=performance.now(),currentFps=0,currentPing=0,pingStart=0;
+
+function toggleFpsDisplay(){
+  showFps=!showFps;
+  localStorage.setItem("cf_showfps",showFps?"1":"0");
+  document.getElementById("show-fps-btn").textContent=showFps?"Вкл":"Выкл";
+  const ov=document.getElementById("fps-overlay");
+  if(ov)ov.style.display=showFps&&onlineRunning?"block":"none";
+}
+
+setInterval(()=>{
+  if(!onlineRunning)return;
+  pingStart=performance.now();
+  socket.emit("ping_check");
+},2000);
+socket.on("pong_check",()=>{
+  currentPing=Math.round(performance.now()-pingStart);
+  const pv=document.getElementById("ping-val");
+  if(pv)pv.textContent="Пинг: "+currentPing+"ms";
+});
+
+// Локальное предсказание позиции игрока
+let localMe=null;
+
 socket.on("connect_error",()=>{document.getElementById("online-msg").style.display="block";document.getElementById("online-msg").textContent="⚠ Нет соединения с сервером";});
 socket.on("waiting",()=>startSearchTimer());
 socket.on("matchFound",({roomId:rid,side,opponent})=>{
@@ -306,16 +332,36 @@ socket.on("matchFound",({roomId:rid,side,opponent})=>{
   setTimeout(startOnlineGame,800);
 });
 socket.on("state",(state)=>{
-  if(localState&&onlineRunning){
-    const lerp=(a,b,t)=>a+(b-a)*t,t=0.4;
-    for(let i=0;i<2;i++){
-      localState.players[i].x=lerp(localState.players[i].x,state.players[i].x,t);
-      localState.players[i].y=lerp(localState.players[i].y,state.players[i].y,t);
-      Object.assign(localState.players[i],{angle:state.players[i].angle,hp:state.players[i].hp,blocking:state.players[i].blocking,attackPhase:state.players[i].attackPhase,attackAnim:state.players[i].attackAnim,spinTimer:state.players[i].spinTimer,iframeTimer:state.players[i].iframeTimer});
-    }
-    localState.orbs=state.orbs;
-  }else localState=state;
-  if(onlineRunning)renderOnline(localState);
+  if(!localState) localState=JSON.parse(JSON.stringify(state));
+  // Инициализируем localMe при первом state
+  if(!localMe&&mySide!==null){
+    localMe=JSON.parse(JSON.stringify(state.players[mySide]));
+  }
+  // Обновляем только соперника из сервера, себя — из localMe
+  const opp=1-mySide;
+  if(mySide!==null&&localState.players[opp]){
+    const lerp=(a,b,t)=>a+(b-a)*t;
+    localState.players[opp].x=lerp(localState.players[opp].x,state.players[opp].x,0.5);
+    localState.players[opp].y=lerp(localState.players[opp].y,state.players[opp].y,0.5);
+    Object.assign(localState.players[opp],{
+      angle:state.players[opp].angle,hp:state.players[opp].hp,
+      blocking:state.players[opp].blocking,attackPhase:state.players[opp].attackPhase,
+      attackAnim:state.players[opp].attackAnim,spinTimer:state.players[opp].spinTimer,
+      iframeTimer:state.players[opp].iframeTimer
+    });
+  }
+  localState.orbs=state.orbs;
+  // Синхронизируем localMe с сервером
+  if(localMe&&mySide!==null){
+    const srv=state.players[mySide];
+    const drift=Math.hypot(localMe.x-srv.x,localMe.y-srv.y);
+    if(drift>80){localMe.x=srv.x;localMe.y=srv.y;}
+    else{localMe.x+=(srv.x-localMe.x)*0.1;localMe.y+=(srv.y-localMe.y)*0.1;}
+    localMe.hp=srv.hp;localMe.iframeTimer=srv.iframeTimer;
+    localMe.dashTimer=srv.dashTimer;localMe.dashVx=srv.dashVx;localMe.dashVy=srv.dashVy;
+    localMe.attackPhase=srv.attackPhase;localMe.attackAnim=srv.attackAnim;
+    localMe.spinTimer=srv.spinTimer;
+  }
 });
 socket.on("gameOver",({won})=>{
   onlineRunning=false;stopOnlineGame();lastGameMode="online";
@@ -355,6 +401,11 @@ function startOnlineGame(){
   onlineCanvas=document.getElementById("online-canvas");
   onlineCanvas.width=CANVAS_W;onlineCanvas.height=CANVAS_H;onlineCtx=onlineCanvas.getContext("2d");
   onlineParticles=[];myDashUsed=false;myOrbUsed=false;mySpinUsed=false;onlineRunning=true;
+  localMe=null; // сбросим, инициализируем при первом state
+  // Показать FPS оверлей если включён
+  const ov=document.getElementById("fps-overlay");
+  if(ov)ov.style.display=showFps?"block":"none";
+  document.getElementById("show-fps-btn").textContent=showFps?"Вкл":"Выкл";
   // Показать ник соперника
   const bl=document.getElementById("online-bot-label");
   if(bl)bl.textContent=opponentNickname;
@@ -405,6 +456,45 @@ function updateOnlineSkillBar(){
   if(!onlineRunning)return;
   const inp={up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),block:!!onlineKeys["KeyF"],angle:myAngle};
   socket.emit("input",{roomId,input:inp});
+
+  // Клиент-сайд предсказание — двигаем себя локально без ожидания сервера
+  if(localMe){
+    const spd=inp.block?PLAYER_SPEED*0.5:PLAYER_SPEED;
+    if(localMe.dashTimer>0){
+      localMe.dashTimer-=16;
+      localMe.x=clamp(localMe.x+localMe.dashVx,RADIUS,CANVAS_W-RADIUS);
+      localMe.y=clamp(localMe.y+localMe.dashVy,RADIUS,CANVAS_H-RADIUS);
+    } else {
+      if(inp.up)   localMe.y=clamp(localMe.y-spd,RADIUS,CANVAS_H-RADIUS);
+      if(inp.down) localMe.y=clamp(localMe.y+spd,RADIUS,CANVAS_H-RADIUS);
+      if(inp.left) localMe.x=clamp(localMe.x-spd,RADIUS,CANVAS_W-RADIUS);
+      if(inp.right)localMe.x=clamp(localMe.x+spd,RADIUS,CANVAS_W-RADIUS);
+    }
+    localMe.angle=myAngle;
+    localMe.blocking=inp.block;
+  }
+
+  // FPS счётчик
+  fpsFrames++;
+  const now=performance.now();
+  if(now-fpsLast>=1000){
+    currentFps=fpsFrames;fpsFrames=0;fpsLast=now;
+    const fv=document.getElementById("fps-val");
+    if(fv)fv.textContent="FPS: "+currentFps;
+  }
+
+  if(localState){
+    // Рендерим с предсказанной позицией себя
+    const renderState=JSON.parse(JSON.stringify(localState));
+    if(localMe&&mySide!==null){
+      renderState.players[mySide].x=localMe.x;
+      renderState.players[mySide].y=localMe.y;
+      renderState.players[mySide].angle=localMe.angle;
+      renderState.players[mySide].blocking=localMe.blocking;
+    }
+    renderOnline(renderState);
+  }
+
   requestAnimationFrame(sendOnlineInput);
 }
 

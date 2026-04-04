@@ -95,6 +95,10 @@ io.on("connection", (socket) => {
     if (waitingPlayer && waitingPlayer.id === socket.id) waitingPlayer = null;
   });
 
+  socket.on("ping_check", () => {
+    socket.emit("pong_check");
+  });
+
   socket.on("disconnect", () => {
     console.log("disconnected:", socket.id);
     if (waitingPlayer && waitingPlayer.id === socket.id) waitingPlayer = null;

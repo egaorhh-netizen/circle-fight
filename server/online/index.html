@@ -68,6 +68,10 @@
       <label>Тема:</label>
       <button id="theme-btn" onclick="toggleTheme()">Светлая</button>
     </div>
+    <div class="setting-row">
+      <label>FPS и пинг (онлайн):</label>
+      <button id="show-fps-btn" onclick="toggleFpsDisplay()">Вкл</button>
+    </div>
     <button onclick="showMenu()">Назад</button>
   </div>
 
@@ -95,7 +99,7 @@
   </div>
 
   <!-- ОНЛАЙН ИГРА -->
-  <div id="online-screen" class="hidden">
+  <div id="online-screen" class="hidden" style="position:relative">
     <div id="hud">
       <div class="hp-block">
         <span id="online-player-label">Я</span>
@@ -109,6 +113,9 @@
       </div>
     </div>
     <canvas id="online-canvas"></canvas>
+    <div id="fps-overlay" style="display:none;position:absolute;bottom:8px;left:8px;font-size:0.75rem;opacity:0.7;font-family:monospace;pointer-events:none;color:#0f0;">
+      <span id="fps-val">FPS: --</span> | <span id="ping-val">Пинг: --ms</span>
+    </div>
     <div id="skill-bar">
       <div id="online-dash-icon" class="skill-icon">Q</div>
       <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
