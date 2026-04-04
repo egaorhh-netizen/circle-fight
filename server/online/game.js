@@ -107,8 +107,27 @@ socket.on("matchFound", ({ roomId: rid, side, opponent }) => {
 });
 
 socket.on("state", (state) => {
-  localState=state;
-  if (gameRunning) renderState(state);
+  // Интерполяция — плавно двигаем к новому состоянию
+  if (localState && gameRunning) {
+    // Плавно интерполируем позиции
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const t = 0.4;
+    for (let i = 0; i < 2; i++) {
+      localState.players[i].x = lerp(localState.players[i].x, state.players[i].x, t);
+      localState.players[i].y = lerp(localState.players[i].y, state.players[i].y, t);
+      localState.players[i].angle = state.players[i].angle;
+      localState.players[i].hp = state.players[i].hp;
+      localState.players[i].blocking = state.players[i].blocking;
+      localState.players[i].attackPhase = state.players[i].attackPhase;
+      localState.players[i].attackAnim = state.players[i].attackAnim;
+      localState.players[i].spinTimer = state.players[i].spinTimer;
+      localState.players[i].iframeTimer = state.players[i].iframeTimer;
+    }
+    localState.orbs = state.orbs;
+  } else {
+    localState = state;
+  }
+  if (gameRunning) renderState(localState);
 });
 
 socket.on("opponentAction", ({action}) => {

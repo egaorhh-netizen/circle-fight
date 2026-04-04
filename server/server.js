@@ -34,7 +34,7 @@ let waitingPlayer = null; // socket waiting for opponent
 // roomId -> { players: [socketA, socketB], state: {...} }
 const rooms = {};
 
-const TICK = 50; // ms server tick
+const TICK = 33; // ~30fps
 
 io.on("connection", (socket) => {
   console.log("connected:", socket.id);
