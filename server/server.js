@@ -151,6 +151,7 @@ function makePlayer(x, y, angle, data) {
     orbUsed: false,
     spinUsed: false, spinTimer: 0,
     shieldHp: 5,
+    ironShieldUsed: false, ironShieldTimer: 0,
     nickname: data?.nickname || "player",
     swordId: data?.swordId || "default",
     rating: data?.rating || 0,
@@ -170,10 +171,13 @@ function processAction(state, idx, action) {
     const angleDiff = Math.abs(normalizeAngle(Math.atan2(dy, dx) - p.angle));
     if (dist <= ATTACK_RANGE && angleDiff < Math.PI/2.5 && opp.iframeTimer <= 0) {
       const oppInp = state.inputs[1-idx] || {};
-      // Проверяем оба источника — текущий input И состояние blocking
       const isBlocking = (opp.blocking || !!oppInp.block) && (opp.shieldHp == null || opp.shieldHp > 0);
       if (isBlocking) {
         opp.shieldHp = Math.max(0, (opp.shieldHp ?? 5) - 1);
+      } else if (opp.ironShieldTimer > 0) {
+        // Iron Shield — отражаем урон обратно
+        p.hp = Math.max(0, p.hp - ATTACK_DMG);
+        p.iframeTimer = IFRAME_TIME;
       } else if (!opp.blocking && !oppInp.block) {
         opp.hp = Math.max(0, opp.hp - ATTACK_DMG);
         opp.iframeTimer = IFRAME_TIME;
@@ -181,6 +185,10 @@ function processAction(state, idx, action) {
         opp.y = clamp(opp.y + (dy/dist)*KNOCKBACK, RADIUS, CANVAS_H-RADIUS);
       }
     }
+  } else if (action.type === "ironshield") {
+    if (p.ironShieldUsed || p.ironShieldTimer > 0) return;
+    p.ironShieldUsed = true;
+    p.ironShieldTimer = 3000;
   } else if (action.type === "dash") {
     if (p.dashUsed || p.dashTimer > 0 || p.blocking) return;
     p.dashUsed = true; p.dashTimer = DASH_DUR;
@@ -225,8 +233,14 @@ function tickState(state) {
       const opp = state.players[1-i];
       const dd = Math.hypot(opp.x-p.x, opp.y-p.y);
       if (dd < RADIUS*2.2 && opp.iframeTimer <= 0 && !opp.blocking) {
-        opp.hp = Math.max(0, opp.hp - DASH_DMG);
-        opp.iframeTimer = IFRAME_TIME*2;
+        if (opp.ironShieldTimer > 0) {
+          // Отражаем dash обратно
+          p.hp = Math.max(0, p.hp - DASH_DMG);
+          p.iframeTimer = IFRAME_TIME*2;
+        } else {
+          opp.hp = Math.max(0, opp.hp - DASH_DMG);
+          opp.iframeTimer = IFRAME_TIME*2;
+        }
         p.dashTimer = 0;
       }
     } else {
@@ -244,6 +258,7 @@ function tickState(state) {
 
     if (p.attackTimer  > 0) p.attackTimer  -= dt;
     if (p.iframeTimer  > 0) p.iframeTimer  -= dt;
+    if (p.ironShieldTimer > 0) { p.ironShieldTimer -= dt; if (p.ironShieldTimer < 0) p.ironShieldTimer = 0; }
 
     // Attack animation tick
     if (p.attackPhase) {
@@ -261,8 +276,13 @@ function tickState(state) {
       const opp = state.players[1-i];
       const d = Math.hypot(opp.x-p.x, opp.y-p.y);
       if (d < SPIN_RANGE && opp.iframeTimer <= 0 && !opp.blocking && !p._spinHit) {
-        opp.hp = Math.max(0, opp.hp - SPIN_DMG);
-        opp.iframeTimer = IFRAME_TIME*2;
+        if (opp.ironShieldTimer > 0) {
+          p.hp = Math.max(0, p.hp - SPIN_DMG);
+          p.iframeTimer = IFRAME_TIME*2;
+        } else {
+          opp.hp = Math.max(0, opp.hp - SPIN_DMG);
+          opp.iframeTimer = IFRAME_TIME*2;
+        }
         p._spinHit = true;
       }
       if (p.spinTimer <= 0) { p.spinTimer = 0; p._spinHit = false; }
@@ -282,8 +302,15 @@ function tickState(state) {
     if (o.x<0||o.x>CANVAS_W||o.y<0||o.y>CANVAS_H) { state.orbs.splice(i,1); continue; }
     const hitDist = Math.hypot(target.x-o.x, target.y-o.y);
     if (hitDist < RADIUS+ORB_RADIUS && target.iframeTimer <= 0 && !target.blocking) {
-      target.hp = Math.max(0, target.hp - ORB_DMG);
-      target.iframeTimer = IFRAME_TIME;
+      if (target.ironShieldTimer > 0) {
+        // Отражаем orb обратно в атакующего
+        const attacker = state.players[o.owner];
+        attacker.hp = Math.max(0, attacker.hp - ORB_DMG);
+        attacker.iframeTimer = IFRAME_TIME;
+      } else {
+        target.hp = Math.max(0, target.hp - ORB_DMG);
+        target.iframeTimer = IFRAME_TIME;
+      }
       state.orbs.splice(i,1);
     }
   }
