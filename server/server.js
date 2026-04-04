@@ -14,20 +14,11 @@ const MIME = {
 };
 
 const httpServer = http.createServer((req, res) => {
-  const urlPath = req.url.split('?')[0];
-  let filePath = path.join(ONLINE_DIR, urlPath === "/" ? "index.html" : urlPath);
+  let filePath = path.join(ONLINE_DIR, req.url === "/" ? "index.html" : req.url);
   const ext = path.extname(filePath);
-  console.log("GET", urlPath, "->", filePath);
   fs.readFile(filePath, (err, data) => {
-    if (err) {
-      console.log("404:", filePath, err.message);
-      res.writeHead(404); res.end("Not found: " + filePath);
-      return;
-    }
-    res.writeHead(200, {
-      "Content-Type": MIME[ext] || "text/plain",
-      "Cache-Control": "no-cache, no-store, must-revalidate",
-    });
+    if (err) { res.writeHead(404); res.end("Not found"); return; }
+    res.writeHead(200, { "Content-Type": MIME[ext] || "text/plain" });
     res.end(data);
   });
 });
