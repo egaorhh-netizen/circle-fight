@@ -69,6 +69,15 @@
       <label>FPS и пинг:</label>
       <button id="show-fps-btn" onclick="toggleFpsDisplay()">Выкл</button>
     </div>
+    <div class="setting-row">
+      <label>Звук:</label>
+      <input type="range" id="volume-slider" min="0" max="100" value="70" oninput="setVolume(this.value)" style="width:120px">
+      <span id="volume-val">70%</span>
+    </div>
+    <div class="setting-row">
+      <label>Звуки игры:</label>
+      <button id="sound-btn" onclick="toggleSound()">Вкл</button>
+    </div>
     <button onclick="showMenu()">Назад</button>
   </div>
 

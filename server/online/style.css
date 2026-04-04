@@ -216,9 +216,9 @@ body.dark #menu h1 span {
   animation: blueShift 3s ease-in-out infinite reverse;
 }
 @keyframes blueShift {
-  0%   { background-position: 0% 50%;   filter: drop-shadow(0 0 10px rgba(0,150,255,0.7)); }
-  50%  { background-position: 100% 50%; filter: drop-shadow(0 0 22px rgba(0,200,255,1)); }
-  100% { background-position: 0% 50%;   filter: drop-shadow(0 0 10px rgba(0,150,255,0.7)); }
+  0%   { background-position: 0% 50%;   filter: drop-shadow(0 0 6px rgba(0,150,255,0.5)); }
+  50%  { background-position: 100% 50%; filter: drop-shadow(0 0 12px rgba(0,200,255,0.8)); }
+  100% { background-position: 0% 50%;   filter: drop-shadow(0 0 6px rgba(0,150,255,0.5)); }
 }
 
 /* Светлая тема — золотой стиль */
