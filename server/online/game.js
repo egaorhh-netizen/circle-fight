@@ -341,6 +341,7 @@ socket.on("state",(state)=>{
   // Инициализируем localMe при первом state
   if(!localMe&&mySide!==null){
     localMe=JSON.parse(JSON.stringify(state.players[mySide]));
+    localMe.swordId=selectedSwordId;
   }
 
   // Добавляем состояние соперника в буфер с временной меткой
@@ -356,12 +357,17 @@ socket.on("state",(state)=>{
 
   localState.orbs = state.orbs;
 
-  // Синхронизируем localMe — только HP и события, НЕ позицию
+  // Синхронизируем localMe — HP, события И мягкая коррекция позиции
   if(localMe&&mySide!==null){
     const srv=state.players[mySide];
     localMe.hp=srv.hp;
     localMe.iframeTimer=srv.iframeTimer;
     if(srv.dashTimer<=0&&localMe.dashTimer>0) localMe.dashTimer=0;
+    // Мягкая коррекция позиции — 5% в сторону сервера каждый пакет
+    // Это убирает расхождение для проверки урона на сервере
+    localMe.x += (srv.x - localMe.x) * 0.05;
+    localMe.y += (srv.y - localMe.y) * 0.05;
+    localMe.swordId = selectedSwordId;
   }
 });
 socket.on("gameOver",({won})=>{
@@ -500,8 +506,7 @@ function sendOnlineInput(){
     }
     localMe.angle=myAngle;
     localMe.blocking=inp.block;
-    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
-    // Тикаем анимацию атаки локально
+    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;    // Тикаем анимацию атаки локально
     tickAttackAnim(localMe,dt);
     // Тикаем спин локально
     if(localMe.spinTimer>0){
