@@ -360,17 +360,9 @@ socket.on("state",(state)=>{
   // Синхронизируем localMe — позиция с сервера (интерполяция), анимации локальные
   if(localMe&&mySide!==null){
     const srv=state.players[mySide];
-    // Корректируем позицию только при большом расхождении
-    const drift=Math.hypot(localMe.x-srv.x, localMe.y-srv.y);
-    if(drift>80){
-      // Резкая коррекция — сильно расошлись
-      localMe.x=srv.x; localMe.y=srv.y;
-    } else if(drift>20){
-      // Мягкая коррекция
-      localMe.x+=(srv.x-localMe.x)*0.15;
-      localMe.y+=(srv.y-localMe.y)*0.15;
-    }
-    // Всегда синхронизируем важные данные
+    // Всегда мягко тянем к серверу — без резких прыжков
+    localMe.x+=(srv.x-localMe.x)*0.1;
+    localMe.y+=(srv.y-localMe.y)*0.1;
     localMe.hp=srv.hp;
     localMe.iframeTimer=srv.iframeTimer;
     localMe.dashTimer=srv.dashTimer;
@@ -533,7 +525,12 @@ function sendOnlineInput(){
       if(inp.right)localMe.x=clamp(localMe.x+spd,RADIUS,CANVAS_W-RADIUS);
     }
     localMe.angle=myAngle;
-    localMe.blocking=inp.block;    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
+    localMe.blocking=inp.block;
+    // Пересчитываем угол если мышь не двигалась (позиция изменилась)
+    if(lastMouseX||lastMouseY){
+      myAngle=Math.atan2(lastMouseY-localMe.y, lastMouseX-localMe.x);
+      localMe.angle=myAngle;
+    }    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
     tickAttackAnim(localMe,dt);
     if(localMe.spinTimer>0){
       localMe.spinTimer-=dt;
