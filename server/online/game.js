@@ -298,7 +298,7 @@ let searchInterval=null,searchSeconds=0;
 let opponentNickname="Соперник";
 
 // Буфер состояний соперника для интерполяции
-const OPP_BUFFER_DELAY = 120; // мс задержки рендера соперника
+const OPP_BUFFER_DELAY = 60; // мс задержки рендера соперника
 let oppBuffer = []; // [{time, state}]
 let oppRendered = null; // текущее интерполированное состояние соперника
 
@@ -361,8 +361,8 @@ socket.on("state",(state)=>{
   if(localMe&&mySide!==null){
     const srv=state.players[mySide];
     // Плавно двигаем к серверной позиции
-    localMe.x += (srv.x - localMe.x) * 0.3;
-    localMe.y += (srv.y - localMe.y) * 0.3;
+    localMe.x += (srv.x - localMe.x) * 0.6;
+    localMe.y += (srv.y - localMe.y) * 0.6;
     localMe.hp=srv.hp;
     localMe.iframeTimer=srv.iframeTimer;
     localMe.dashTimer=srv.dashTimer;
