@@ -85,7 +85,6 @@
         <span id="bot-hp-text">100</span>
       </div>
     </div>
-    <span id="shield-hint">Щит [F] | Дэш [Q] | Орб [E] | Спин [R]</span>
     <canvas id="canvas"></canvas>
     <div id="skill-bar">
       <div id="dash-icon" class="skill-icon" title="Дэш [Q]">Q</div>
@@ -109,9 +108,13 @@
         <span id="online-bot-hp-text">100</span>
       </div>
     </div>
-    <span id="shield-hint2">Щит [F] | Дэш [Q] | Орб [E] | Спин [R]</span>
     <canvas id="online-canvas"></canvas>
-    <button onclick="leaveOnlineGame()" style="margin-top:8px;padding:6px 20px;font-size:0.85rem">В меню</button>
+    <div id="skill-bar">
+      <div id="online-dash-icon" class="skill-icon">Q</div>
+      <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
+      <div id="online-spin-icon" class="skill-icon spin-skill">R</div>
+    </div>
+    <button id="btn-menu" onclick="leaveOnlineGame()">В меню</button>
   </div>
 
   <!-- КОНЕЦ ИГРЫ -->

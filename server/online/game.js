@@ -381,8 +381,7 @@ function updateOnlineSkillBar(){
   document.getElementById("online-dash-icon")?.classList.toggle("used",myDashUsed);
   document.getElementById("online-orb-icon")?.classList.toggle("used",myOrbUsed);
   document.getElementById("online-spin-icon")?.classList.toggle("used",mySpinUsed);
-}
-function sendOnlineInput(){
+}function sendOnlineInput(){
   if(!onlineRunning)return;
   const inp={up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),block:!!onlineKeys["KeyF"],angle:myAngle};
   socket.emit("input",{roomId,input:inp});
@@ -491,7 +490,7 @@ function onKeyDown(e){
 }
 function onKeyUp(e){keys[e.code]=false;}
 function onMouseMove(e){if(!canvas||!player)return;const r=canvas.getBoundingClientRect();player.angle=Math.atan2(e.clientY-r.top-player.y,e.clientX-r.left-player.x);}
-function onMouseDown(e){if(e.button===0)doBotAttack();}
+function onMouseDown(e){if(e.button===0&&gameRunning)doBotAttack();}
 
 function doBotAttack(){
   if(player.attackTimer>0||player.blocking)return;
