@@ -500,15 +500,18 @@ function sendOnlineInput(){
   const dt=Math.min(now-lastFrameTime,50);
   lastFrameTime=now;
 
-  const myShieldHp = localMe ? (localMe.shieldHp ?? SHIELD_MAX) : SHIELD_MAX;
+  const myShieldHp = (localMe?.shieldHp != null) ? localMe.shieldHp : (localState?.players[mySide]?.shieldHp ?? SHIELD_MAX);
+  const shieldBroken = myShieldHp <= 0;
   const inp={
     up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),
     down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),
     left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),
     right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),
-    block:!!onlineKeys["KeyF"] && myShieldHp > 0,  // нельзя блокировать со сломанным щитом
+    block:!!onlineKeys["KeyF"] && !shieldBroken,
     angle:myAngle
   };
+  // Визуально запрещаем блок если щит сломан
+  if(localMe) localMe.blocking = inp.block;
   socket.emit("input",{roomId,input:inp});
 
   // Только анимации локально — позиция с сервера
