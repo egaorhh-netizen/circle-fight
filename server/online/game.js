@@ -5,7 +5,9 @@ const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
 const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
 const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
-const REFLECT_DUR = 3000; // 3 секундыconst MAX_RATING=12500,RATING_PER_WIN=15;
+const SHIELD_MAX=5;
+const REFLECT_DUR=3000;
+const MAX_RATING=12500,RATING_PER_WIN=15;
 
 // ---- STORAGE ----
 let ratingBot    = parseInt(localStorage.getItem("cf_rating")        || "0");
@@ -36,7 +38,6 @@ function updateRatingDisplay() {
   const o = document.getElementById("rating-online-display");
   if (b) b.textContent = "🤖 MMR: " + ratingBot;
   if (o) o.textContent = "🌐 MMR: " + ratingOnline;
-  updateOrbsDisplay();
 }
 
 function updateOrbsDisplay(){
