@@ -14,7 +14,9 @@ const MIME = {
 };
 
 const httpServer = http.createServer((req, res) => {
-  let filePath = path.join(ONLINE_DIR, req.url === "/" ? "index.html" : req.url);
+  // Убираем query string из пути
+  const urlPath = req.url.split('?')[0];
+  let filePath = path.join(ONLINE_DIR, urlPath === "/" ? "index.html" : urlPath);
   const ext = path.extname(filePath);
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); res.end("Not found"); return; }
