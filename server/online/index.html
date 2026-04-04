@@ -39,6 +39,7 @@
     <button onclick="startBotGame()">Играть с ботом</button>
     <button onclick="findMatch()">Играть онлайн</button>
     <button onclick="showInventory()">Инвентарь</button>
+    <button onclick="showShop()">🛒 Магазин</button>
     <button onclick="showSettings()">Настройки</button>
     <span id="online-msg" style="color:#e74c3c;font-weight:bold;display:none"></span>
   </div>
@@ -81,6 +82,30 @@
     <button onclick="showMenu()">Назад</button>
   </div>
 
+  <!-- МАГАЗИН -->
+  <div id="shop" class="hidden">
+    <div id="shop-orbs-display">
+      <div id="shop-orb-icon-anim"></div>
+      <span id="shop-orbs-count">0</span>
+      <span style="opacity:.5;font-size:.85rem">орбов</span>
+    </div>
+    <h2 id="shop-title">Магазин</h2>
+    <div id="shop-grid">
+      <!-- Iron Shield -->
+      <div class="shop-card" id="shop-card-ironshield">
+        <div class="shop-card-icon">🛡</div>
+        <div class="shop-card-name">Iron Shield</div>
+        <div class="shop-card-desc">На 3 сек отражает весь урон обратно. Клавиша Z. Один раз за игру.</div>
+        <div class="shop-card-price">
+          <div class="orb-mini"></div>
+          500
+        </div>
+        <button class="shop-buy-btn" id="buy-ironshield" onclick="buySkill('ironshield',500)">Купить</button>
+      </div>
+    </div>
+    <button onclick="showMenu()">Назад</button>
+  </div>
+
   <!-- ИГРА С БОТОМ -->
   <div id="game-screen" class="hidden">
     <div id="hud">
@@ -104,6 +129,7 @@
       <div id="dash-icon" class="skill-icon">Q</div>
       <div id="orb-icon" class="skill-icon orb-skill">E</div>
       <div id="spin-icon" class="skill-icon spin-skill">R</div>
+      <div id="ironshield-icon" class="skill-icon iron-skill hidden">Z</div>
     </div>
     <button id="btn-menu" onclick="showMenu()">В меню</button>
   </div>
@@ -134,6 +160,7 @@
       <div id="online-dash-icon" class="skill-icon">Q</div>
       <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
       <div id="online-spin-icon" class="skill-icon spin-skill">R</div>
+      <div id="online-ironshield-icon" class="skill-icon iron-skill hidden">Z</div>
     </div>
     <button id="btn-menu" onclick="leaveOnlineGame()">В меню</button>
   </div>

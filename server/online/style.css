@@ -334,3 +334,99 @@ body.light .shield-bar-bg { background: rgba(0,0,0,0.1); }
 }
 body.dark  #online-canvas { background: #1a1a2e; border: 2px solid #333; }
 body.light #online-canvas { background: #e8e8f0; border: 2px solid #ccc; }
+
+/* ---- SHOP ---- */
+#shop {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  width: 100%; max-width: 600px; padding: 20px;
+}
+#shop h2 { font-size: 2rem; }
+
+#shop-orbs-display {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 24px; border-radius: 30px;
+  background: rgba(80,160,255,0.1);
+  border: 1px solid rgba(80,160,255,0.3);
+  font-size: 1.3rem; font-weight: 700;
+}
+#shop-orbs-count { color: #4af; font-size: 1.5rem; }
+
+/* Анимированный орб в шапке магазина */
+#shop-orb-icon-anim {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #88ddff, #0055ff 60%, #003399);
+  box-shadow: 0 0 12px rgba(80,160,255,0.8), 0 0 24px rgba(0,100,255,0.4);
+  animation: orbPulse 1.5s ease-in-out infinite;
+}
+@keyframes orbPulse {
+  0%,100% { box-shadow: 0 0 12px rgba(80,160,255,0.8), 0 0 24px rgba(0,100,255,0.4); transform: scale(1); }
+  50%      { box-shadow: 0 0 20px rgba(80,200,255,1),   0 0 40px rgba(0,150,255,0.6); transform: scale(1.12); }
+}
+
+/* Мини-орб рядом с ценой */
+.orb-mini {
+  width: 14px; height: 14px; border-radius: 50%; display: inline-block;
+  background: radial-gradient(circle at 35% 35%, #88ddff, #0055ff 60%, #003399);
+  box-shadow: 0 0 6px rgba(80,160,255,0.8);
+  vertical-align: middle; margin-right: 4px;
+}
+
+#shop-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px; width: 100%;
+}
+
+.shop-card {
+  border-radius: 14px; padding: 18px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border: 1px solid rgba(150,150,255,0.2);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+body.dark  .shop-card { background: #1a1a2e; }
+body.light .shop-card { background: #e0e0ee; }
+.shop-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(80,100,255,0.2); }
+
+.shop-card-icon { font-size: 2.5rem; }
+.shop-card-name { font-size: 1rem; font-weight: 700; }
+.shop-card-desc { font-size: 0.75rem; opacity: 0.55; text-align: center; line-height: 1.5; }
+.shop-card-price {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 1rem; font-weight: 700; color: #4af;
+}
+
+.shop-buy-btn {
+  padding: 8px 24px; border-radius: 8px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #0055cc, #0099ff);
+  color: #fff; font-weight: 700; font-size: 0.9rem; transition: all 0.15s;
+}
+.shop-buy-btn:hover { filter: brightness(1.2); transform: scale(1.04); }
+.shop-buy-btn.owned {
+  background: linear-gradient(135deg, #115511, #22aa44);
+  cursor: default;
+}
+.shop-buy-btn.owned:hover { filter: none; transform: none; }
+
+/* ---- IRON SHIELD SKILL ---- */
+.iron-skill {
+  border-color: #aaa !important;
+  color: #ccc !important;
+}
+body.dark  .iron-skill { background: rgba(180,180,180,0.1) !important; }
+body.light .iron-skill { background: rgba(100,100,100,0.08) !important; }
+.iron-skill.active-shield {
+  border-color: #fff !important; color: #fff !important;
+  box-shadow: 0 0 16px rgba(255,255,255,0.6) !important;
+  animation: ironPulse 0.4s ease-in-out infinite alternate;
+}
+@keyframes ironPulse {
+  from { box-shadow: 0 0 10px rgba(200,200,255,0.5); }
+  to   { box-shadow: 0 0 24px rgba(255,255,255,0.9); }
+}
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+}

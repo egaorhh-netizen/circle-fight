@@ -14,6 +14,15 @@ let nickname     = localStorage.getItem("cf_nickname") || "player";
 let currentTheme = localStorage.getItem("cf_theme")   || "dark";
 let currentLang  = localStorage.getItem("cf_lang")    || "ru";
 
+// ---- ORBS CURRENCY ----
+let orbs_currency = parseInt(localStorage.getItem("cf_orbs") || "0");
+let ownedSkills   = JSON.parse(localStorage.getItem("cf_skills") || "[]");
+
+function saveOrbs() { localStorage.setItem("cf_orbs", orbs_currency); }
+function saveSkills(){ localStorage.setItem("cf_skills", JSON.stringify(ownedSkills)); }
+function addOrbs(n) { orbs_currency += n; saveOrbs(); }
+function hasSkill(id){ return ownedSkills.includes(id); }
+
 function saveAll() {
   localStorage.setItem("cf_rating",        ratingBot);
   localStorage.setItem("cf_rating_online", ratingOnline);
@@ -67,12 +76,39 @@ function show(id){document.getElementById(id)?.classList.remove("hidden");}
 function hide(id){document.getElementById(id)?.classList.add("hidden");}
 
 function showMenu() {
-  ["inventory","settings","game-screen","online-screen","gameover"].forEach(hide);
+  ["inventory","settings","game-screen","online-screen","gameover","shop"].forEach(hide);
   show("menu"); stopBotGame(); updateRatingDisplay();
   document.getElementById("search-bar").classList.remove("visible");
 }
 function showInventory(){hide("menu");show("inventory");buildInventory();}
 function showSettings(){hide("menu");show("settings");}
+
+// ---- SHOP ----
+function showShop(){
+  hide("menu"); show("shop");
+  document.getElementById("shop-orbs-count").textContent = orbs_currency;
+  const btn = document.getElementById("buy-ironshield");
+  if(hasSkill("ironshield")){ btn.textContent="✓ Куплено"; btn.classList.add("owned"); btn.disabled=true; }
+  else { btn.textContent="Купить"; btn.classList.remove("owned"); btn.disabled=false; }
+}
+
+function buySkill(id, price){
+  if(hasSkill(id)) return;
+  if(orbs_currency < price){ shakeCost(); return; }
+  orbs_currency -= price;
+  ownedSkills.push(id);
+  saveOrbs(); saveSkills();
+  document.getElementById("shop-orbs-count").textContent = orbs_currency;
+  const btn = document.getElementById("buy-"+id);
+  btn.textContent="✓ Куплено"; btn.classList.add("owned"); btn.disabled=true;
+}
+
+function shakeCost(){
+  const el = document.getElementById("shop-orbs-display");
+  el.style.animation="none"; el.offsetHeight;
+  el.style.animation="shake 0.4s ease";
+}
+
 
 function buildInventory() {
   const grid=document.getElementById("sword-grid"); grid.innerHTML="";
@@ -125,7 +161,8 @@ function startBotGame(){
   const bs=botStats(),bsw=pickBotSword();
   player={x:180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:0,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockHoldTime:0,
-    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX};
+    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX,
+    ironShieldUsed:false,ironShieldTimer:0};
   bot={x:CANVAS_W-180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:Math.PI,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockTimer:0,reactionTimer:0,
     stateTimer:0,dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,
@@ -176,6 +213,13 @@ function updateBotHUD(){
   const di=document.getElementById("dash-icon");if(di)di.classList.toggle("used",!!player.dashUsed);
   const oi=document.getElementById("orb-icon");if(oi)oi.classList.toggle("used",!!player.orbUsed);
   const si=document.getElementById("spin-icon");if(si)si.classList.toggle("used",!!player.spinUsed);
+  // Iron Shield icon
+  const ii=document.getElementById("ironshield-icon");
+  if(ii){
+    if(hasSkill("ironshield")){ ii.classList.remove("hidden"); }
+    ii.classList.toggle("used", !!player.ironShieldUsed && player.ironShieldTimer<=0);
+    ii.classList.toggle("active-shield", player.ironShieldTimer>0);
+  }
 }
 
 function updateBot(dt){
@@ -216,17 +260,29 @@ function updateBot(dt){
     bot.dashTimer-=dt;bot.x=clamp(bot.x+bot.dashVx,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+bot.dashVy,RADIUS,CANVAS_H-RADIUS);
     const dd=Math.hypot(player.x-bot.x,player.y-bot.y);
     if(dd<RADIUS*2.2&&player.iframeTimer<=0&&!player.blocking){
-      player.hp=Math.max(0,player.hp-DASH_DMG);player.iframeTimer=IFRAME_TIME*2;
-      const nx=(player.x-bot.x)/dd,ny=(player.y-bot.y)/dd;
-      player.x=clamp(player.x+nx*20,RADIUS,CANVAS_W-RADIUS);player.y=clamp(player.y+ny*20,RADIUS,CANVAS_H-RADIUS);
-      spawnParticles(bot.x,bot.y,"rgba(255,80,80,0.9)");updateBotHUD();bot.dashTimer=0;
-      if(player.hp<=0){endBotGame(false);return;}
+      // Iron Shield — отражаем dash
+      if(player.ironShieldTimer>0){
+        bot.hp=Math.max(0,bot.hp-DASH_DMG);bot.iframeTimer=IFRAME_TIME*2;
+        spawnIronShieldReflect(player.x,player.y);
+        updateBotHUD();bot.dashTimer=0;if(bot.hp<=0){endBotGame(true);return;}
+      } else {
+        player.hp=Math.max(0,player.hp-DASH_DMG);player.iframeTimer=IFRAME_TIME*2;
+        const nx=(player.x-bot.x)/dd,ny=(player.y-bot.y)/dd;
+        player.x=clamp(player.x+nx*20,RADIUS,CANVAS_W-RADIUS);player.y=clamp(player.y+ny*20,RADIUS,CANVAS_H-RADIUS);
+        spawnParticles(bot.x,bot.y,"rgba(255,80,80,0.9)");updateBotHUD();bot.dashTimer=0;
+        if(player.hp<=0){endBotGame(false);return;}
+      }
     }
   }
   if(player.attackTimer>0)player.attackTimer-=dt;if(player.iframeTimer>0)player.iframeTimer-=dt;
   if(bot.attackTimer>0)bot.attackTimer-=dt;if(bot.iframeTimer>0)bot.iframeTimer-=dt;
   if(bot.blockTimer>0)bot.blockTimer-=dt;if(bot.reactionTimer>0)bot.reactionTimer-=dt;
   if(bot.dashCooldown>0)bot.dashCooldown-=dt;if(bot.orbCooldown>0)bot.orbCooldown-=dt;if(bot.spinCooldown>0)bot.spinCooldown-=dt;
+  // Iron Shield тик
+  if(player.ironShieldTimer>0){
+    player.ironShieldTimer-=dt;
+    if(player.ironShieldTimer<=0){ player.ironShieldTimer=0; spawnIronShieldEnd(player.x,player.y); }
+  }
   tickAttackAnim(player,dt);tickAttackAnim(bot,dt);
   if(player.spinTimer>0){
     player.spinTimer-=dt;player.spinAngle=(1-player.spinTimer/SPIN_DUR)*Math.PI*2;
@@ -254,10 +310,18 @@ function updateOrbsBot(dt){
     if(o.x<0||o.x>CANVAS_W||o.y<0||o.y>CANVAS_H){orbs.splice(i,1);continue;}
     const hitDist=Math.hypot(target.x-o.x,target.y-o.y);
     if(hitDist<RADIUS+ORB_RADIUS&&target.iframeTimer<=0&&!target.blocking){
-      target.hp=Math.max(0,target.hp-ORB_DMG);target.iframeTimer=IFRAME_TIME;
-      spawnParticles(o.x,o.y,o.fromPlayer?"rgba(80,160,255,0.9)":"rgba(255,80,80,0.9)");
-      orbs.splice(i,1);updateBotHUD();
-      if(target.hp<=0){endBotGame(o.fromPlayer);return;}
+      // Iron Shield для игрока
+      if(!o.fromPlayer && player.ironShieldTimer>0){
+        bot.hp=Math.max(0,bot.hp-ORB_DMG);bot.iframeTimer=IFRAME_TIME;
+        spawnIronShieldReflect(player.x,player.y);
+        orbs.splice(i,1);updateBotHUD();
+        if(bot.hp<=0){endBotGame(true);return;}
+      } else {
+        target.hp=Math.max(0,target.hp-ORB_DMG);target.iframeTimer=IFRAME_TIME;
+        spawnParticles(o.x,o.y,o.fromPlayer?"rgba(80,160,255,0.9)":"rgba(255,80,80,0.9)");
+        orbs.splice(i,1);updateBotHUD();
+        if(target.hp<=0){endBotGame(o.fromPlayer);return;}
+      }
     }
   }
 }
@@ -290,6 +354,13 @@ function doBotAIAttack(){
   if(player.iframeTimer>0)return;
   const dx=player.x-bot.x,dy=player.y-bot.y,dist=Math.hypot(dx,dy);if(dist>ATTACK_RANGE)return;
   if(player.blocking&&(player.shieldHp||0)>0){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(player.angle-a))<Math.PI/1.8){player.shieldHp--;playSound(player.shieldHp<=0?"shieldBreak":"block");updateBotHUD();return;}}
+  // Iron Shield — отражаем урон
+  if(player.ironShieldTimer>0){
+    bot.hp=Math.max(0,bot.hp-bs.damage);bot.iframeTimer=IFRAME_TIME*2;
+    spawnIronShieldReflect(player.x,player.y);
+    updateBotHUD();if(bot.hp<=0){endBotGame(true);return;}
+    return;
+  }
   player.hp=Math.max(0,player.hp-bs.damage);player.iframeTimer=IFRAME_TIME;
   player.x=clamp(player.x+(dx/dist)*KNOCKBACK,RADIUS,CANVAS_W-RADIUS);player.y=clamp(player.y+(dy/dist)*KNOCKBACK,RADIUS,CANVAS_H-RADIUS);
   playSound("hit");
@@ -298,7 +369,7 @@ function doBotAIAttack(){
 
 function endBotGame(won){
   gameRunning=false;cancelAnimationFrame(animId);lastGameMode="bot";
-  if(won)ratingBot=Math.min(ratingBot+RATING_PER_WIN,MAX_RATING);
+  if(won){ ratingBot=Math.min(ratingBot+RATING_PER_WIN,MAX_RATING); addOrbs(30); }
   else ratingBot=Math.max(ratingBot-RATING_PER_WIN,0);
   saveAll();hide("game-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
@@ -380,7 +451,7 @@ socket.on("state",(state)=>{
 });
 socket.on("gameOver",({won})=>{
   onlineRunning=false;stopOnlineGame();lastGameMode="online";
-  if(won)ratingOnline=Math.min(ratingOnline+RATING_PER_WIN,MAX_RATING);
+  if(won){ ratingOnline=Math.min(ratingOnline+RATING_PER_WIN,MAX_RATING); addOrbs(50); }
   else ratingOnline=Math.max(ratingOnline-RATING_PER_WIN,0);
   saveAll();hide("online-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
@@ -626,6 +697,22 @@ function drawEntity(c,entity,color,isMe,swordId,ptcls){
   c.save();c.translate(x,y);
   if(iframeTimer>0&&Math.floor(iframeTimer/80)%2===0)c.globalAlpha=0.4;
   if(blocking){c.beginPath();c.arc(0,0,RADIUS+8,0,Math.PI*2);c.fillStyle=isMe?"rgba(80,160,255,0.25)":"rgba(255,80,80,0.25)";c.fill();}
+  // Iron Shield эффект
+  if(isMe && entity.ironShieldTimer>0){
+    const prog = entity.ironShieldTimer/3000;
+    const pulse = 1+Math.sin(Date.now()/120)*0.08;
+    c.save();
+    c.beginPath();c.arc(0,0,(RADIUS+16)*pulse,0,Math.PI*2);
+    c.strokeStyle=`rgba(200,210,255,${0.5+prog*0.4})`;c.lineWidth=4;
+    c.shadowColor="#aabbff";c.shadowBlur=20;c.stroke();
+    // Вращающиеся сегменты
+    for(let i=0;i<6;i++){
+      const a=(i/6)*Math.PI*2+Date.now()/400;
+      c.beginPath();c.arc(0,0,RADIUS+16,a,a+0.5);
+      c.strokeStyle=`rgba(255,255,255,${0.6+prog*0.3})`;c.lineWidth=3;c.stroke();
+    }
+    c.restore();
+  }
   c.beginPath();c.arc(0,0,RADIUS,0,Math.PI*2);c.fillStyle=color;c.fill();
   c.strokeStyle="rgba(255,255,255,0.15)";c.lineWidth=2;c.stroke();
   if(blocking){c.save();c.rotate(angle);c.beginPath();c.arc(0,0,RADIUS+10,-Math.PI/2.5,Math.PI/2.5);c.strokeStyle=isMe?"#4af":"#f44";c.lineWidth=5;c.stroke();c.restore();}
@@ -685,7 +772,43 @@ function doBotDash(){if(player.dashUsed||player.dashTimer>0||player.blocking)ret
 function doBotOrb(){if(player.orbUsed)return;player.orbUsed=true;const dx=bot.x-player.x,dy=bot.y-player.y,dist=Math.hypot(dx,dy)||1;orbs.push({x:player.x,y:player.y,vx:(dx/dist)*ORB_SPEED,vy:(dy/dist)*ORB_SPEED,fromPlayer:true,hue:200,trail:[]});playSound("orb");}
 function doBotSpin(){if(player.spinUsed||player.spinTimer>0||player.blocking)return;player.spinUsed=true;player.spinTimer=SPIN_DUR;player._spinHit=false;playSound("spin");}
 
+function doBotIronShield(){
+  if(!hasSkill("ironshield"))return;
+  if(player.ironShieldUsed||player.ironShieldTimer>0)return;
+  player.ironShieldUsed=true;
+  player.ironShieldTimer=3000;
+  spawnIronShieldStart(player.x,player.y);
+  updateBotHUD();
+}
+
+function spawnIronShieldStart(x,y){
+  for(let i=0;i<24;i++){
+    const a=(i/24)*Math.PI*2;
+    particles.push({x:x+Math.cos(a)*(RADIUS+10),y:y+Math.sin(a)*(RADIUS+10),vx:Math.cos(a)*1.5,vy:Math.sin(a)*1.5,life:1,color:"rgba(200,210,255,0.9)",size:4,type:"spark"});
+  }
+}
+function spawnIronShieldReflect(x,y){
+  for(let i=0;i<16;i++){
+    const a=Math.random()*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:1,color:"rgba(255,80,80,0.9)",size:5,type:"spark"});
+  }
+}
+function spawnIronShieldEnd(x,y){
+  for(let i=0;i<20;i++){
+    const a=Math.random()*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(a)*2,vy:Math.sin(a)*2,life:1,color:"rgba(180,180,255,0.7)",size:3,type:"spark"});
+  }
+}
+
 document.addEventListener("keydown",onKeyDown);
+function onKeyDown(e){
+  keys[e.code]=true;
+  if(!gameRunning)return;
+  if(e.code==="KeyQ")doBotDash();
+  if(e.code==="KeyE")doBotOrb();
+  if(e.code==="KeyR")doBotSpin();
+  if(e.code==="KeyZ")doBotIronShield();
+}
 document.addEventListener("keyup",onKeyUp);
 
 // ---- MENU BACKGROUND ANIMATION ----
