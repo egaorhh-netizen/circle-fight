@@ -5,7 +5,8 @@ const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
 const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
 const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
-const REFLECT_DUR = 3000; // 3 секундыconst MAX_RATING=12500,RATING_PER_WIN=15;
+const SHIELD_MAX=5;
+const MAX_RATING=12500,RATING_PER_WIN=15;
 
 // ---- STORAGE ----
 let ratingBot    = parseInt(localStorage.getItem("cf_rating")        || "0");
@@ -13,8 +14,6 @@ let ratingOnline = parseInt(localStorage.getItem("cf_rating_online") || "0");
 let nickname     = localStorage.getItem("cf_nickname") || "player";
 let currentTheme = localStorage.getItem("cf_theme")   || "dark";
 let currentLang  = localStorage.getItem("cf_lang")    || "ru";
-let orbs         = parseInt(localStorage.getItem("cf_orbs")          || "0");
-let ownedSkills  = JSON.parse(localStorage.getItem("cf_skills")      || "[]");
 
 function saveAll() {
   localStorage.setItem("cf_rating",        ratingBot);
@@ -22,8 +21,6 @@ function saveAll() {
   localStorage.setItem("cf_nickname",      nickname);
   localStorage.setItem("cf_theme",         currentTheme);
   localStorage.setItem("cf_lang",          currentLang);
-  localStorage.setItem("cf_orbs",          orbs);
-  localStorage.setItem("cf_skills",        JSON.stringify(ownedSkills));
 }
 
 // ---- INIT ----
@@ -36,14 +33,6 @@ function updateRatingDisplay() {
   const o = document.getElementById("rating-online-display");
   if (b) b.textContent = "🤖 MMR: " + ratingBot;
   if (o) o.textContent = "🌐 MMR: " + ratingOnline;
-  updateOrbsDisplay();
-}
-
-function updateOrbsDisplay(){
-  const el=document.getElementById("orbs-display");
-  const el2=document.getElementById("shop-orbs-display");
-  if(el)  el.textContent  = "🔮 " + orbs + " орбов";
-  if(el2) el2.textContent = "🔮 " + orbs + " орбов";
 }
 
 function editNickname() {
@@ -79,60 +68,14 @@ function show(id){document.getElementById(id)?.classList.remove("hidden");}
 function hide(id){document.getElementById(id)?.classList.add("hidden");}
 
 function showMenu() {
-  ["inventory","settings","game-screen","online-screen","gameover","shop"].forEach(hide);
+  ["inventory","settings","game-screen","online-screen","gameover"].forEach(hide);
   show("menu"); stopBotGame(); updateRatingDisplay();
   document.getElementById("search-bar").classList.remove("visible");
 }
 function showInventory(){hide("menu");show("inventory");buildInventory();}
 function showSettings(){hide("menu");show("settings");}
 
-// ---- SHOP ----
-const SHOP_ITEMS = [
-  {
-    id: "reflective_shield",
-    name: "Отражающий щит",
-    desc: "Нажми Z — красный щит на 3 сек. Урон по тебе отражается обратно. Одноразовый за игру.",
-    icon: "🔴",
-    price: 1000,
-    key: "Z",
-  }
-];
-
-function showShop(){
-  hide("menu"); show("shop");
-  updateOrbsDisplay();
-  buildShop();
-}
-
-function buildShop(){
-  const grid=document.getElementById("shop-grid");
-  grid.innerHTML="";
-  SHOP_ITEMS.forEach(item=>{
-    const owned=ownedSkills.includes(item.id);
-    const card=document.createElement("div");
-    card.className="shop-card"+(owned?" owned":"");
-    card.innerHTML=`
-      <div class="shop-skill-icon">${item.icon}</div>
-      <div class="shop-skill-name">${item.name}</div>
-      <div class="shop-skill-desc">${item.desc}</div>
-      <div class="shop-price">${owned?"✓ Куплено":"🔮 "+item.price+" орбов"}</div>
-    `;
-    if(!owned){
-      card.onclick=()=>buyItem(item);
-    }
-    grid.appendChild(card);
-  });
-}
-
-function buyItem(item){
-  if(orbs < item.price){ playSound("block"); return; }
-  orbs -= item.price;
-  ownedSkills.push(item.id);
-  saveAll();
-  updateOrbsDisplay();
-  buildShop();
-  playSound("win");
-}
+function buildInventory() {
   const grid=document.getElementById("sword-grid"); grid.innerHTML="";
   SWORD_SKINS.forEach(sword=>{
     const unlocked = sword.onlineOnly
@@ -159,8 +102,7 @@ function buyItem(item){
 let canvas,ctx,animId,lastTime=0,keys={},player,bot,gameRunning=false,particles=[],orbs=[];
 
 function botStats(){
-  const tier=Math.min(Math.floor(ratingBot/100), 7); // макс тир 7 = 700 ммр
-  const tc=Math.min(tier,5),ag=tier>=3;
+  const tier=Math.floor(ratingBot/100),tc=Math.min(tier,5),ag=tier>=3;
   return{speed:2+tc,attackCd:Math.max(300,1000-tier*30),reactionTime:Math.max(50,600-tier*20),
     blockChance:Math.min(0.95,0.1+tier*0.05),blockDuration:Math.min(2000,200+tier*80),
     damage:8+tc,retreatHp:ag?0:0.15,turtlePatience:Math.max(300,2000-tier*50),
@@ -183,8 +125,7 @@ function startBotGame(){
   const bs=botStats(),bsw=pickBotSword();
   player={x:180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:0,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockHoldTime:0,
-    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX,
-    reflectUsed:false,reflectTimer:0};
+    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX};
   bot={x:CANVAS_W-180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:Math.PI,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockTimer:0,reactionTimer:0,
     stateTimer:0,dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,
@@ -235,14 +176,6 @@ function updateBotHUD(){
   const di=document.getElementById("dash-icon");if(di)di.classList.toggle("used",!!player.dashUsed);
   const oi=document.getElementById("orb-icon");if(oi)oi.classList.toggle("used",!!player.orbUsed);
   const si=document.getElementById("spin-icon");if(si)si.classList.toggle("used",!!player.spinUsed);
-  // Рефлект иконка
-  const ri=document.getElementById("reflect-icon");
-  if(ri){
-    const hasSkill=ownedSkills.includes("reflective_shield");
-    ri.classList.toggle("hidden",!hasSkill);
-    ri.classList.toggle("used",hasSkill&&player.reflectUsed&&player.reflectTimer<=0);
-    ri.classList.toggle("active",player.reflectTimer>0);
-  }
 }
 
 function updateBot(dt){
@@ -286,7 +219,6 @@ function updateBot(dt){
   if(bot.attackTimer>0)bot.attackTimer-=dt;if(bot.iframeTimer>0)bot.iframeTimer-=dt;
   if(bot.blockTimer>0)bot.blockTimer-=dt;if(bot.reactionTimer>0)bot.reactionTimer-=dt;
   if(bot.dashCooldown>0)bot.dashCooldown-=dt;if(bot.orbCooldown>0)bot.orbCooldown-=dt;if(bot.spinCooldown>0)bot.spinCooldown-=dt;
-  if(player.reflectTimer>0){player.reflectTimer-=dt;if(player.reflectTimer<=0)player.reflectTimer=0;}
   tickAttackAnim(player,dt);tickAttackAnim(bot,dt);
   if(player.spinTimer>0){
     player.spinTimer-=dt;player.spinAngle=(1-player.spinTimer/SPIN_DUR)*Math.PI*2;
@@ -333,8 +265,8 @@ function updateBotAI(dt){
   if(bot.dashTimer>0)return;
   if(!bot.orbUsed&&bot.orbCooldown<=0){bot.orbUsed=true;orbs.push({x:bot.x,y:bot.y,vx:-(dx/dist)*ORB_SPEED,vy:-(dy/dist)*ORB_SPEED,fromPlayer:false,hue:0,trail:[]});}
   if(!bot.spinUsed&&bot.spinCooldown<=0&&dist<SPIN_RANGE+20){bot.spinUsed=true;bot.spinTimer=SPIN_DUR;bot._spinHit=false;}
-  if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0&&(bot.shieldHp||0)>0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
-  bot.blocking=bot.blockTimer>0&&(bot.shieldHp||0)>0;
+  if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
+  bot.blocking=bot.blockTimer>0;
   const spd=bot.blocking?bs.speed*.3:bs.speed,lowHp=bs.retreatHp>0&&bot.hp<MAX_HP*bs.retreatHp,justHit=bot.iframeTimer>0,canAttack=bot.attackTimer<=0&&!bot.blocking,turtling=player.blockHoldTime>bs.turtlePatience;
   if(lowHp&&dist<bs.aggroDist)botMv(-dx,-dy,dist,spd);
   else if(justHit)botMv(-dx,-dy,dist,spd*1.8);
@@ -350,12 +282,6 @@ function doBotAIAttack(){
   if(player.iframeTimer>0)return;
   const dx=player.x-bot.x,dy=player.y-bot.y,dist=Math.hypot(dx,dy);if(dist>ATTACK_RANGE)return;
   if(player.blocking&&(player.shieldHp||0)>0){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(player.angle-a))<Math.PI/1.8){player.shieldHp--;playSound(player.shieldHp<=0?"shieldBreak":"block");updateBotHUD();return;}}
-  // Рефлект — урон отражается боту
-  if(player.reflectTimer>0){
-    bot.hp=Math.max(0,bot.hp-bs.damage);bot.iframeTimer=IFRAME_TIME;
-    spawnParticles(player.x,player.y,"rgba(255,50,50,0.9)");
-    playSound("hit");updateBotHUD();if(bot.hp<=0)endBotGame(true);return;
-  }
   player.hp=Math.max(0,player.hp-bs.damage);player.iframeTimer=IFRAME_TIME;
   player.x=clamp(player.x+(dx/dist)*KNOCKBACK,RADIUS,CANVAS_W-RADIUS);player.y=clamp(player.y+(dy/dist)*KNOCKBACK,RADIUS,CANVAS_H-RADIUS);
   playSound("hit");
@@ -366,7 +292,6 @@ function endBotGame(won){
   gameRunning=false;cancelAnimationFrame(animId);lastGameMode="bot";
   if(won)ratingBot=Math.min(ratingBot+RATING_PER_WIN,MAX_RATING);
   else ratingBot=Math.max(ratingBot-RATING_PER_WIN,0);
-  if(won){ orbs+=20; } // +20 орбов за победу над ботом
   saveAll();hide("game-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
   document.getElementById("gameover-rating").textContent="🤖 MMR: "+ratingBot;
@@ -430,7 +355,6 @@ socket.on("state",(state)=>{
     localState.players[i].x=lerp(localState.players[i].x,state.players[i].x,0.35);
     localState.players[i].y=lerp(localState.players[i].y,state.players[i].y,0.35);
     localState.players[i].hp=state.players[i].hp;
-    localState.players[i].shieldHp=state.players[i].shieldHp??SHIELD_MAX;
     localState.players[i].blocking=state.players[i].blocking;
     localState.players[i].iframeTimer=state.players[i].iframeTimer;
     localState.players[i].attackPhase=state.players[i].attackPhase;
@@ -449,7 +373,6 @@ socket.on("gameOver",({won})=>{
   onlineRunning=false;stopOnlineGame();lastGameMode="online";
   if(won)ratingOnline=Math.min(ratingOnline+RATING_PER_WIN,MAX_RATING);
   else ratingOnline=Math.max(ratingOnline-RATING_PER_WIN,0);
-  if(won){ orbs+=50; } // +50 орбов за победу онлайн
   saveAll();hide("online-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
   document.getElementById("gameover-rating").textContent="🌐 MMR: "+ratingOnline;
@@ -576,18 +499,14 @@ function sendOnlineInput(){
   const dt=Math.min(now-lastFrameTime,50);
   lastFrameTime=now;
 
-  const myShieldHp = (localMe?.shieldHp != null) ? localMe.shieldHp : (localState?.players[mySide]?.shieldHp ?? SHIELD_MAX);
-  const shieldBroken = myShieldHp <= 0;
   const inp={
     up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),
     down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),
     left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),
     right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),
-    block:!!onlineKeys["KeyF"] && !shieldBroken,
+    block:!!onlineKeys["KeyF"],
     angle:myAngle
   };
-  // Визуально запрещаем блок если щит сломан
-  if(localMe) localMe.blocking = inp.block;
   socket.emit("input",{roomId,input:inp});
 
   // Только анимации локально — позиция с сервера
@@ -694,16 +613,6 @@ function drawEntity(c,entity,color,isMe,swordId,ptcls){
   c.save();c.translate(x,y);
   if(iframeTimer>0&&Math.floor(iframeTimer/80)%2===0)c.globalAlpha=0.4;
   if(blocking){c.beginPath();c.arc(0,0,RADIUS+8,0,Math.PI*2);c.fillStyle=isMe?"rgba(80,160,255,0.25)":"rgba(255,80,80,0.25)";c.fill();}
-  // Рефлект-щит
-  if(isMe&&entity.reflectTimer>0){
-    const pulse=1+Math.sin(Date.now()/80)*0.15;
-    c.save();
-    c.beginPath();c.arc(0,0,(RADIUS+14)*pulse,0,Math.PI*2);
-    c.strokeStyle="rgba(255,30,30,0.9)";c.lineWidth=4;c.shadowColor="#ff0000";c.shadowBlur=25;c.stroke();
-    c.beginPath();c.arc(0,0,(RADIUS+24)*pulse,0,Math.PI*2);
-    c.strokeStyle="rgba(255,80,80,0.35)";c.lineWidth=2;c.stroke();
-    c.restore();
-  }
   c.beginPath();c.arc(0,0,RADIUS,0,Math.PI*2);c.fillStyle=color;c.fill();
   c.strokeStyle="rgba(255,255,255,0.15)";c.lineWidth=2;c.stroke();
   if(blocking){c.save();c.rotate(angle);c.beginPath();c.arc(0,0,RADIUS+10,-Math.PI/2.5,Math.PI/2.5);c.strokeStyle=isMe?"#4af":"#f44";c.lineWidth=5;c.stroke();c.restore();}
@@ -742,7 +651,6 @@ function onKeyDown(e){
   if(e.code==="KeyQ")doBotDash();
   if(e.code==="KeyE")doBotOrb();
   if(e.code==="KeyR")doBotSpin();
-  if(e.code==="KeyZ")doReflect();
 }
 function onKeyUp(e){keys[e.code]=false;}
 function onMouseMove(e){if(!canvas||!player)return;const r=canvas.getBoundingClientRect();player.angle=Math.atan2(e.clientY-r.top-player.y,e.clientX-r.left-player.x);}
@@ -763,15 +671,6 @@ function doBotAttack(){
 function doBotDash(){if(player.dashUsed||player.dashTimer>0||player.blocking)return;player.dashUsed=true;player.dashTimer=DASH_DUR;player.dashVx=Math.cos(player.angle)*DASH_SPEED;player.dashVy=Math.sin(player.angle)*DASH_SPEED;spawnParticles(player.x,player.y,"rgba(80,160,255,0.9)");playSound("dash");}
 function doBotOrb(){if(player.orbUsed)return;player.orbUsed=true;const dx=bot.x-player.x,dy=bot.y-player.y,dist=Math.hypot(dx,dy)||1;orbs.push({x:player.x,y:player.y,vx:(dx/dist)*ORB_SPEED,vy:(dy/dist)*ORB_SPEED,fromPlayer:true,hue:200,trail:[]});playSound("orb");}
 function doBotSpin(){if(player.spinUsed||player.spinTimer>0||player.blocking)return;player.spinUsed=true;player.spinTimer=SPIN_DUR;player._spinHit=false;playSound("spin");}
-
-function doReflect(){
-  if(!ownedSkills.includes("reflective_shield"))return;
-  if(player.reflectUsed||player.reflectTimer>0)return;
-  player.reflectUsed=true;
-  player.reflectTimer=REFLECT_DUR;
-  playSound("spin");
-  updateBotHUD();
-}
 
 document.addEventListener("keydown",onKeyDown);
 document.addEventListener("keyup",onKeyUp);
@@ -860,114 +759,67 @@ document.addEventListener("keyup",onKeyUp);
   draw();
 })();
 
-// ---- SOUND ENGINE ----
+// ---- SOUND ENGINE (Web Audio API) ----
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
-let masterVolume = parseFloat(localStorage.getItem("cf_volume") ?? "0.7");
-let soundEnabled = localStorage.getItem("cf_sound") !== "0";
-let gameSoundEnabled = localStorage.getItem("cf_gamesound") !== "0";
-
 function getAudio(){ if(!audioCtx) audioCtx=new AudioCtx(); return audioCtx; }
 
-function setVolume(v){
-  masterVolume=v/100;
-  localStorage.setItem("cf_volume", masterVolume);
-  document.getElementById("volume-val").textContent=v+"%";
-}
-function toggleSound(){
-  soundEnabled=!soundEnabled;
-  localStorage.setItem("cf_sound", soundEnabled?"1":"0");
-  document.getElementById("sound-btn").textContent=soundEnabled?"Вкл":"Выкл";
-}
-
-function toggleGameSound(){
-  gameSoundEnabled=!gameSoundEnabled;
-  localStorage.setItem("cf_gamesound", gameSoundEnabled?"1":"0");
-  document.getElementById("gamesound-btn").textContent=gameSoundEnabled?"Вкл":"Выкл";
-}
-
 function playSound(type){
-  // Игровые звуки
-  const gameTypes=["hit","block","shieldBreak","dash","orb","spin","win","lose"];
-  if(gameTypes.includes(type) && !gameSoundEnabled) return;
-  // Звуки меню
-  if(type==="click" && !soundEnabled) return;
   try{
     const ac=getAudio();
+    const o=ac.createOscillator();
+    const g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
     const now=ac.currentTime;
-    const vol=masterVolume;
-
-    function tone(freq, type, dur, gainVal, freqEnd){
-      const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g); g.connect(ac.destination);
-      o.type=type; o.frequency.setValueAtTime(freq,now);
-      if(freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd,now+dur);
-      g.gain.setValueAtTime(gainVal*vol,now);
-      g.gain.exponentialRampToValueAtTime(0.001,now+dur);
-      o.start(now); o.stop(now+dur);
-    }
-    function noise(dur, gainVal){
-      const buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);
-      const d=buf.getChannelData(0);
-      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
-      const src=ac.createBufferSource(), g=ac.createGain();
-      const filt=ac.createBiquadFilter(); filt.type="bandpass";
-      src.buffer=buf; src.connect(filt); filt.connect(g); g.connect(ac.destination);
-      g.gain.setValueAtTime(gainVal*vol,now);
-      g.gain.exponentialRampToValueAtTime(0.001,now+dur);
-      src.start(now); src.stop(now+dur);
-      return filt;
-    }
-
     if(type==="hit"){
-      // Удар — короткий удар + шум
-      tone(120,"square",0.08,0.4,60);
-      const n=noise(0.06,0.3); n.frequency.value=800;
+      o.type="square"; o.frequency.setValueAtTime(180,now); o.frequency.exponentialRampToValueAtTime(80,now+0.1);
+      g.gain.setValueAtTime(0.3,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
+      o.start(now); o.stop(now+0.12);
     } else if(type==="block"){
-      // Блок — металлический звон
-      tone(600,"triangle",0.15,0.3,400);
-      tone(900,"sine",0.1,0.15,700);
+      o.type="triangle"; o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(200,now+0.08);
+      g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.1);
+      o.start(now); o.stop(now+0.1);
     } else if(type==="shieldBreak"){
-      // Поломка щита — треск + падение
-      tone(400,"sawtooth",0.05,0.5);
-      tone(300,"sawtooth",0.1,0.4,80);
-      const n=noise(0.2,0.4); n.frequency.value=2000;
+      o.type="sawtooth"; o.frequency.setValueAtTime(300,now); o.frequency.exponentialRampToValueAtTime(50,now+0.4);
+      g.gain.setValueAtTime(0.4,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.4);
+      o.start(now); o.stop(now+0.4);
     } else if(type==="dash"){
-      // Дэш — свист
-      tone(300,"sine",0.05,0.2,1200);
-      tone(200,"sine",0.12,0.15,800);
+      o.type="sine"; o.frequency.setValueAtTime(600,now); o.frequency.exponentialRampToValueAtTime(1200,now+0.15);
+      g.gain.setValueAtTime(0.25,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.18);
+      o.start(now); o.stop(now+0.18);
     } else if(type==="orb"){
-      // Орб — магический звук
-      tone(500,"sine",0.08,0.2,800);
-      tone(700,"sine",0.2,0.15,500);
+      o.type="sine"; o.frequency.setValueAtTime(800,now); o.frequency.exponentialRampToValueAtTime(400,now+0.3);
+      g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.3);
+      o.start(now); o.stop(now+0.3);
     } else if(type==="spin"){
-      // Спин — нарастающий вихрь
-      tone(150,"sawtooth",0.08,0.3,600);
-      tone(200,"sine",0.4,0.2,1000);
+      o.type="sawtooth"; o.frequency.setValueAtTime(200,now); o.frequency.linearRampToValueAtTime(800,now+0.5);
+      g.gain.setValueAtTime(0.3,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.55);
+      o.start(now); o.stop(now+0.55);
     } else if(type==="win"){
       [523,659,784,1047].forEach((f,i)=>{
-        setTimeout(()=>tone(f,"sine",0.3,0.3),i*120);
+        const oo=ac.createOscillator(),gg=ac.createGain();
+        oo.connect(gg);gg.connect(ac.destination);
+        oo.type="sine"; oo.frequency.value=f;
+        gg.gain.setValueAtTime(0.3,now+i*0.12); gg.gain.exponentialRampToValueAtTime(0.001,now+i*0.12+0.3);
+        oo.start(now+i*0.12); oo.stop(now+i*0.12+0.3);
       });
     } else if(type==="lose"){
-      [400,300,220,150].forEach((f,i)=>{
-        setTimeout(()=>tone(f,"sawtooth",0.25,0.25),i*150);
+      [400,300,200,150].forEach((f,i)=>{
+        const oo=ac.createOscillator(),gg=ac.createGain();
+        oo.connect(gg);gg.connect(ac.destination);
+        oo.type="sawtooth"; oo.frequency.value=f;
+        gg.gain.setValueAtTime(0.25,now+i*0.15); gg.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.25);
+        oo.start(now+i*0.15); oo.stop(now+i*0.15+0.25);
       });
     } else if(type==="click"){
-      tone(1200,"sine",0.04,0.08,900);
+      o.type="sine"; o.frequency.setValueAtTime(1000,now);
+      g.gain.setValueAtTime(0.1,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.05);
+      o.start(now); o.stop(now+0.05);
     }
   }catch(e){}
 }
 
-// Инициализация настроек звука
-document.addEventListener("DOMContentLoaded",()=>{
-  const vs=document.getElementById("volume-slider");
-  if(vs){ vs.value=Math.round(masterVolume*100); document.getElementById("volume-val").textContent=Math.round(masterVolume*100)+"%"; }
-  const sb=document.getElementById("sound-btn");
-  if(sb) sb.textContent=soundEnabled?"Вкл":"Выкл";
-  const gsb=document.getElementById("gamesound-btn");
-  if(gsb) gsb.textContent=gameSoundEnabled?"Вкл":"Выкл";
-});
-
+// Добавляем звук клика на все кнопки
 document.addEventListener("click", e=>{
   if(e.target.tagName==="BUTTON") playSound("click");
 });

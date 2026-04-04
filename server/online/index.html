@@ -36,25 +36,11 @@
       <span id="rating-bot-display">🤖 MMR: 0</span>
       <span id="rating-online-display">🌐 MMR: 0</span>
     </div>
-    <div class="orbs-display">
-      <span id="orbs-display">🔮 0 орбов</span>
-    </div>
     <button onclick="startBotGame()">⚔ Играть с ботом</button>
     <button onclick="findMatch()">🌐 Играть онлайн</button>
-    <button onclick="showShop()">🛒 Магазин</button>
     <button onclick="showInventory()">🗡 Инвентарь</button>
     <button onclick="showSettings()">⚙ Настройки</button>
     <span id="online-msg" style="color:#e74c3c;font-weight:bold;display:none"></span>
-  </div>
-
-  <!-- МАГАЗИН -->
-  <div id="shop" class="hidden">
-    <h2>🛒 Магазин</h2>
-    <div class="orbs-display" style="margin-bottom:8px">
-      <span id="shop-orbs-display">🔮 0 орбов</span>
-    </div>
-    <div id="shop-grid"></div>
-    <button onclick="showMenu()">Назад</button>
   </div>
 
   <!-- ИНВЕНТАРЬ -->
@@ -83,15 +69,6 @@
       <label>FPS и пинг:</label>
       <button id="show-fps-btn" onclick="toggleFpsDisplay()">Выкл</button>
     </div>
-    <div class="setting-row">
-      <label>Звук:</label>
-      <input type="range" id="volume-slider" min="0" max="100" value="70" oninput="setVolume(this.value)" style="width:120px">
-      <span id="volume-val">70%</span>
-    </div>
-    <div class="setting-row">
-      <label>Звуки катки:</label>
-      <button id="gamesound-btn" onclick="toggleGameSound()">Вкл</button>
-    </div>
     <button onclick="showMenu()">Назад</button>
   </div>
 
@@ -118,7 +95,6 @@
       <div id="dash-icon" class="skill-icon">Q</div>
       <div id="orb-icon" class="skill-icon orb-skill">E</div>
       <div id="spin-icon" class="skill-icon spin-skill">R</div>
-      <div id="reflect-icon" class="skill-icon reflect-skill hidden" title="Отражающий щит [Z]">Z</div>
     </div>
     <button id="btn-menu" onclick="showMenu()">В меню</button>
   </div>
@@ -149,7 +125,6 @@
       <div id="online-dash-icon" class="skill-icon">Q</div>
       <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
       <div id="online-spin-icon" class="skill-icon spin-skill">R</div>
-      <div id="online-reflect-icon" class="skill-icon reflect-skill hidden" title="Отражающий щит [Z]">Z</div>
     </div>
     <button id="btn-menu" onclick="leaveOnlineGame()">В меню</button>
   </div>
