@@ -150,6 +150,7 @@ function makePlayer(x, y, angle, data) {
     dashUsed: false, dashTimer: 0, dashVx: 0, dashVy: 0,
     orbUsed: false,
     spinUsed: false, spinTimer: 0,
+    shieldHp: 5,
     nickname: data?.nickname || "player",
     swordId: data?.swordId || "default",
     rating: data?.rating || 0,
@@ -168,11 +169,16 @@ function processAction(state, idx, action) {
     const dx = opp.x - p.x, dy = opp.y - p.y;
     const dist = Math.hypot(dx, dy);
     const angleDiff = Math.abs(normalizeAngle(Math.atan2(dy, dx) - p.angle));
-    if (dist <= ATTACK_RANGE && angleDiff < Math.PI/2.5 && opp.iframeTimer <= 0 && !opp.blocking) {
-      opp.hp = Math.max(0, opp.hp - ATTACK_DMG);
-      opp.iframeTimer = IFRAME_TIME;
-      opp.x = clamp(opp.x + (dx/dist)*KNOCKBACK, RADIUS, CANVAS_W-RADIUS);
-      opp.y = clamp(opp.y + (dy/dist)*KNOCKBACK, RADIUS, CANVAS_H-RADIUS);
+    if (dist <= ATTACK_RANGE && angleDiff < Math.PI/2.5 && opp.iframeTimer <= 0) {
+      if (opp.blocking && opp.shieldHp > 0) {
+        // Блок — снимаем прочность щита
+        opp.shieldHp--;
+      } else if (!opp.blocking) {
+        opp.hp = Math.max(0, opp.hp - ATTACK_DMG);
+        opp.iframeTimer = IFRAME_TIME;
+        opp.x = clamp(opp.x + (dx/dist)*KNOCKBACK, RADIUS, CANVAS_W-RADIUS);
+        opp.y = clamp(opp.y + (dy/dist)*KNOCKBACK, RADIUS, CANVAS_H-RADIUS);
+      }
     }
   } else if (action.type === "dash") {
     if (p.dashUsed || p.dashTimer > 0 || p.blocking) return;
@@ -208,7 +214,7 @@ function tickState(state) {
     const p = state.players[i];
     const inp = state.inputs[i] || {};
 
-    p.blocking = !!inp.block;
+    p.blocking = !!inp.block && (p.shieldHp == null || p.shieldHp > 0);
     if (p.blocking) p.blockHoldTime += dt; else p.blockHoldTime = 0;
 
     if (p.dashTimer > 0) {
