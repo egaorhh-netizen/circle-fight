@@ -326,3 +326,54 @@ body.light .shield-bar-bg { background: rgba(0,0,0,0.1); }
 }
 body.dark  #online-canvas { background: #1a1a2e; border: 2px solid #333; }
 body.light #online-canvas { background: #e8e8f0; border: 2px solid #ccc; }
+
+/* ---- ORBS & SHOP ---- */
+.orbs-display {
+  font-size: 1rem; font-weight: 700;
+  color: #a44fff;
+  text-shadow: 0 0 10px rgba(160,80,255,0.6);
+}
+
+#shop { display:flex; flex-direction:column; align-items:center; gap:16px; }
+
+#shop-grid {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  justify-content: center; max-width: 700px;
+}
+
+.shop-card {
+  width: 200px; border-radius: 14px; padding: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  border: 2px solid rgba(255,80,80,0.4);
+  position: relative; overflow: hidden;
+}
+body.dark  .shop-card { background: rgba(255,30,30,0.08); }
+body.light .shop-card { background: rgba(255,30,30,0.05); }
+.shop-card:hover { transform: scale(1.04); box-shadow: 0 0 20px rgba(255,80,80,0.3); }
+.shop-card.owned  { border-color: rgba(80,255,80,0.5); cursor: default; }
+body.dark  .shop-card.owned { background: rgba(30,255,30,0.06); }
+
+.shop-skill-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 0 12px rgba(255,80,80,0.8));
+}
+.shop-card.owned .shop-skill-icon { filter: drop-shadow(0 0 12px rgba(80,255,80,0.8)); }
+
+.shop-skill-name { font-size: 1rem; font-weight: 700; text-align: center; }
+.shop-skill-desc { font-size: 0.75rem; opacity: 0.7; text-align: center; line-height: 1.4; }
+.shop-price { font-size: 0.9rem; font-weight: 700; color: #a44fff; }
+.shop-card.owned .shop-price { color: #4f4; }
+
+/* Reflect skill icon */
+.reflect-skill { border-color: #f44; color: #f44; }
+body.dark  .reflect-skill { background: rgba(255,0,0,0.12); }
+body.light .reflect-skill { background: rgba(255,0,0,0.06); }
+.reflect-skill.active {
+  animation: reflectPulse 0.3s ease-in-out infinite alternate;
+  box-shadow: 0 0 20px rgba(255,0,0,0.8);
+}
+@keyframes reflectPulse {
+  from { box-shadow: 0 0 10px rgba(255,0,0,0.6); }
+  to   { box-shadow: 0 0 25px rgba(255,80,80,1); }
+}

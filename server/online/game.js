@@ -5,7 +5,7 @@ const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
 const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
 const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
-const SHIELD_MAX=5;const MAX_RATING=12500,RATING_PER_WIN=15;
+const REFLECT_DUR = 3000; // 3 секундыconst MAX_RATING=12500,RATING_PER_WIN=15;
 
 // ---- STORAGE ----
 let ratingBot    = parseInt(localStorage.getItem("cf_rating")        || "0");
@@ -13,6 +13,8 @@ let ratingOnline = parseInt(localStorage.getItem("cf_rating_online") || "0");
 let nickname     = localStorage.getItem("cf_nickname") || "player";
 let currentTheme = localStorage.getItem("cf_theme")   || "dark";
 let currentLang  = localStorage.getItem("cf_lang")    || "ru";
+let orbs         = parseInt(localStorage.getItem("cf_orbs")          || "0");
+let ownedSkills  = JSON.parse(localStorage.getItem("cf_skills")      || "[]");
 
 function saveAll() {
   localStorage.setItem("cf_rating",        ratingBot);
@@ -20,6 +22,8 @@ function saveAll() {
   localStorage.setItem("cf_nickname",      nickname);
   localStorage.setItem("cf_theme",         currentTheme);
   localStorage.setItem("cf_lang",          currentLang);
+  localStorage.setItem("cf_orbs",          orbs);
+  localStorage.setItem("cf_skills",        JSON.stringify(ownedSkills));
 }
 
 // ---- INIT ----
@@ -32,6 +36,14 @@ function updateRatingDisplay() {
   const o = document.getElementById("rating-online-display");
   if (b) b.textContent = "🤖 MMR: " + ratingBot;
   if (o) o.textContent = "🌐 MMR: " + ratingOnline;
+  updateOrbsDisplay();
+}
+
+function updateOrbsDisplay(){
+  const el=document.getElementById("orbs-display");
+  const el2=document.getElementById("shop-orbs-display");
+  if(el)  el.textContent  = "🔮 " + orbs + " орбов";
+  if(el2) el2.textContent = "🔮 " + orbs + " орбов";
 }
 
 function editNickname() {
@@ -67,14 +79,60 @@ function show(id){document.getElementById(id)?.classList.remove("hidden");}
 function hide(id){document.getElementById(id)?.classList.add("hidden");}
 
 function showMenu() {
-  ["inventory","settings","game-screen","online-screen","gameover"].forEach(hide);
+  ["inventory","settings","game-screen","online-screen","gameover","shop"].forEach(hide);
   show("menu"); stopBotGame(); updateRatingDisplay();
   document.getElementById("search-bar").classList.remove("visible");
 }
 function showInventory(){hide("menu");show("inventory");buildInventory();}
 function showSettings(){hide("menu");show("settings");}
 
-function buildInventory() {
+// ---- SHOP ----
+const SHOP_ITEMS = [
+  {
+    id: "reflective_shield",
+    name: "Отражающий щит",
+    desc: "Нажми Z — красный щит на 3 сек. Урон по тебе отражается обратно. Одноразовый за игру.",
+    icon: "🔴",
+    price: 1000,
+    key: "Z",
+  }
+];
+
+function showShop(){
+  hide("menu"); show("shop");
+  updateOrbsDisplay();
+  buildShop();
+}
+
+function buildShop(){
+  const grid=document.getElementById("shop-grid");
+  grid.innerHTML="";
+  SHOP_ITEMS.forEach(item=>{
+    const owned=ownedSkills.includes(item.id);
+    const card=document.createElement("div");
+    card.className="shop-card"+(owned?" owned":"");
+    card.innerHTML=`
+      <div class="shop-skill-icon">${item.icon}</div>
+      <div class="shop-skill-name">${item.name}</div>
+      <div class="shop-skill-desc">${item.desc}</div>
+      <div class="shop-price">${owned?"✓ Куплено":"🔮 "+item.price+" орбов"}</div>
+    `;
+    if(!owned){
+      card.onclick=()=>buyItem(item);
+    }
+    grid.appendChild(card);
+  });
+}
+
+function buyItem(item){
+  if(orbs < item.price){ playSound("block"); return; }
+  orbs -= item.price;
+  ownedSkills.push(item.id);
+  saveAll();
+  updateOrbsDisplay();
+  buildShop();
+  playSound("win");
+}
   const grid=document.getElementById("sword-grid"); grid.innerHTML="";
   SWORD_SKINS.forEach(sword=>{
     const unlocked = sword.onlineOnly
@@ -125,7 +183,8 @@ function startBotGame(){
   const bs=botStats(),bsw=pickBotSword();
   player={x:180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:0,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockHoldTime:0,
-    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX};
+    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX,
+    reflectUsed:false,reflectTimer:0};
   bot={x:CANVAS_W-180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:Math.PI,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockTimer:0,reactionTimer:0,
     stateTimer:0,dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,
@@ -176,6 +235,14 @@ function updateBotHUD(){
   const di=document.getElementById("dash-icon");if(di)di.classList.toggle("used",!!player.dashUsed);
   const oi=document.getElementById("orb-icon");if(oi)oi.classList.toggle("used",!!player.orbUsed);
   const si=document.getElementById("spin-icon");if(si)si.classList.toggle("used",!!player.spinUsed);
+  // Рефлект иконка
+  const ri=document.getElementById("reflect-icon");
+  if(ri){
+    const hasSkill=ownedSkills.includes("reflective_shield");
+    ri.classList.toggle("hidden",!hasSkill);
+    ri.classList.toggle("used",hasSkill&&player.reflectUsed&&player.reflectTimer<=0);
+    ri.classList.toggle("active",player.reflectTimer>0);
+  }
 }
 
 function updateBot(dt){
@@ -219,6 +286,7 @@ function updateBot(dt){
   if(bot.attackTimer>0)bot.attackTimer-=dt;if(bot.iframeTimer>0)bot.iframeTimer-=dt;
   if(bot.blockTimer>0)bot.blockTimer-=dt;if(bot.reactionTimer>0)bot.reactionTimer-=dt;
   if(bot.dashCooldown>0)bot.dashCooldown-=dt;if(bot.orbCooldown>0)bot.orbCooldown-=dt;if(bot.spinCooldown>0)bot.spinCooldown-=dt;
+  if(player.reflectTimer>0){player.reflectTimer-=dt;if(player.reflectTimer<=0)player.reflectTimer=0;}
   tickAttackAnim(player,dt);tickAttackAnim(bot,dt);
   if(player.spinTimer>0){
     player.spinTimer-=dt;player.spinAngle=(1-player.spinTimer/SPIN_DUR)*Math.PI*2;
@@ -282,6 +350,12 @@ function doBotAIAttack(){
   if(player.iframeTimer>0)return;
   const dx=player.x-bot.x,dy=player.y-bot.y,dist=Math.hypot(dx,dy);if(dist>ATTACK_RANGE)return;
   if(player.blocking&&(player.shieldHp||0)>0){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(player.angle-a))<Math.PI/1.8){player.shieldHp--;playSound(player.shieldHp<=0?"shieldBreak":"block");updateBotHUD();return;}}
+  // Рефлект — урон отражается боту
+  if(player.reflectTimer>0){
+    bot.hp=Math.max(0,bot.hp-bs.damage);bot.iframeTimer=IFRAME_TIME;
+    spawnParticles(player.x,player.y,"rgba(255,50,50,0.9)");
+    playSound("hit");updateBotHUD();if(bot.hp<=0)endBotGame(true);return;
+  }
   player.hp=Math.max(0,player.hp-bs.damage);player.iframeTimer=IFRAME_TIME;
   player.x=clamp(player.x+(dx/dist)*KNOCKBACK,RADIUS,CANVAS_W-RADIUS);player.y=clamp(player.y+(dy/dist)*KNOCKBACK,RADIUS,CANVAS_H-RADIUS);
   playSound("hit");
@@ -292,6 +366,7 @@ function endBotGame(won){
   gameRunning=false;cancelAnimationFrame(animId);lastGameMode="bot";
   if(won)ratingBot=Math.min(ratingBot+RATING_PER_WIN,MAX_RATING);
   else ratingBot=Math.max(ratingBot-RATING_PER_WIN,0);
+  if(won){ orbs+=20; } // +20 орбов за победу над ботом
   saveAll();hide("game-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
   document.getElementById("gameover-rating").textContent="🤖 MMR: "+ratingBot;
@@ -374,6 +449,7 @@ socket.on("gameOver",({won})=>{
   onlineRunning=false;stopOnlineGame();lastGameMode="online";
   if(won)ratingOnline=Math.min(ratingOnline+RATING_PER_WIN,MAX_RATING);
   else ratingOnline=Math.max(ratingOnline-RATING_PER_WIN,0);
+  if(won){ orbs+=50; } // +50 орбов за победу онлайн
   saveAll();hide("online-screen");show("gameover");
   document.getElementById("gameover-text").textContent=won?"Вы победили!":"Вы проиграли!";
   document.getElementById("gameover-rating").textContent="🌐 MMR: "+ratingOnline;
@@ -618,6 +694,16 @@ function drawEntity(c,entity,color,isMe,swordId,ptcls){
   c.save();c.translate(x,y);
   if(iframeTimer>0&&Math.floor(iframeTimer/80)%2===0)c.globalAlpha=0.4;
   if(blocking){c.beginPath();c.arc(0,0,RADIUS+8,0,Math.PI*2);c.fillStyle=isMe?"rgba(80,160,255,0.25)":"rgba(255,80,80,0.25)";c.fill();}
+  // Рефлект-щит
+  if(isMe&&entity.reflectTimer>0){
+    const pulse=1+Math.sin(Date.now()/80)*0.15;
+    c.save();
+    c.beginPath();c.arc(0,0,(RADIUS+14)*pulse,0,Math.PI*2);
+    c.strokeStyle="rgba(255,30,30,0.9)";c.lineWidth=4;c.shadowColor="#ff0000";c.shadowBlur=25;c.stroke();
+    c.beginPath();c.arc(0,0,(RADIUS+24)*pulse,0,Math.PI*2);
+    c.strokeStyle="rgba(255,80,80,0.35)";c.lineWidth=2;c.stroke();
+    c.restore();
+  }
   c.beginPath();c.arc(0,0,RADIUS,0,Math.PI*2);c.fillStyle=color;c.fill();
   c.strokeStyle="rgba(255,255,255,0.15)";c.lineWidth=2;c.stroke();
   if(blocking){c.save();c.rotate(angle);c.beginPath();c.arc(0,0,RADIUS+10,-Math.PI/2.5,Math.PI/2.5);c.strokeStyle=isMe?"#4af":"#f44";c.lineWidth=5;c.stroke();c.restore();}
@@ -656,6 +742,7 @@ function onKeyDown(e){
   if(e.code==="KeyQ")doBotDash();
   if(e.code==="KeyE")doBotOrb();
   if(e.code==="KeyR")doBotSpin();
+  if(e.code==="KeyZ")doReflect();
 }
 function onKeyUp(e){keys[e.code]=false;}
 function onMouseMove(e){if(!canvas||!player)return;const r=canvas.getBoundingClientRect();player.angle=Math.atan2(e.clientY-r.top-player.y,e.clientX-r.left-player.x);}
@@ -676,6 +763,15 @@ function doBotAttack(){
 function doBotDash(){if(player.dashUsed||player.dashTimer>0||player.blocking)return;player.dashUsed=true;player.dashTimer=DASH_DUR;player.dashVx=Math.cos(player.angle)*DASH_SPEED;player.dashVy=Math.sin(player.angle)*DASH_SPEED;spawnParticles(player.x,player.y,"rgba(80,160,255,0.9)");playSound("dash");}
 function doBotOrb(){if(player.orbUsed)return;player.orbUsed=true;const dx=bot.x-player.x,dy=bot.y-player.y,dist=Math.hypot(dx,dy)||1;orbs.push({x:player.x,y:player.y,vx:(dx/dist)*ORB_SPEED,vy:(dy/dist)*ORB_SPEED,fromPlayer:true,hue:200,trail:[]});playSound("orb");}
 function doBotSpin(){if(player.spinUsed||player.spinTimer>0||player.blocking)return;player.spinUsed=true;player.spinTimer=SPIN_DUR;player._spinHit=false;playSound("spin");}
+
+function doReflect(){
+  if(!ownedSkills.includes("reflective_shield"))return;
+  if(player.reflectUsed||player.reflectTimer>0)return;
+  player.reflectUsed=true;
+  player.reflectTimer=REFLECT_DUR;
+  playSound("spin");
+  updateBotHUD();
+}
 
 document.addEventListener("keydown",onKeyDown);
 document.addEventListener("keyup",onKeyUp);
