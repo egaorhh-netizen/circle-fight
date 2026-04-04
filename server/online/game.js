@@ -452,29 +452,36 @@ function onOnlineKeyDown(e){
   if(e.code==="KeyR")doOnlineAction("spin");
 }
 function onOnlineKeyUp(e){onlineKeys[e.code]=false;}
+let lastMouseX=0, lastMouseY=0;
+
 function onOnlineMouseMove(e){
   if(!onlineCanvas)return;
   const r=onlineCanvas.getBoundingClientRect();
-  // Учитываем масштаб канваса (CSS размер vs реальный размер)
-  const scaleX = CANVAS_W / r.width;
-  const scaleY = CANVAS_H / r.height;
-  const mx = (e.clientX - r.left) * scaleX;
-  const my = (e.clientY - r.top)  * scaleY;
-  const px = localMe ? localMe.x : (localState?.players[mySide]?.x || CANVAS_W/2);
-  const py = localMe ? localMe.y : (localState?.players[mySide]?.y || CANVAS_H/2);
-  myAngle = Math.atan2(my - py, mx - px);
-  if(localMe) localMe.angle = myAngle;
+  const scaleX=CANVAS_W/r.width, scaleY=CANVAS_H/r.height;
+  lastMouseX=(e.clientX-r.left)*scaleX;
+  lastMouseY=(e.clientY-r.top)*scaleY;
+  updateOnlineAngle();
   socket.emit("action",{roomId,action:{type:"angle",angle:myAngle}});
+}
+
+function updateOnlineAngle(){
+  if(!localMe)return;
+  myAngle=Math.atan2(lastMouseY-localMe.y, lastMouseX-localMe.x);
+  localMe.angle=myAngle;
 }
 function onOnlineMouseDown(e){if(e.button===0)doOnlineAction("attack");}
 function doOnlineAction(type){
   if(!onlineRunning)return;
-  if(type==="dash"&&myDashUsed)return;if(type==="orb"&&myOrbUsed)return;if(type==="spin"&&mySpinUsed)return;
+  if(type==="dash"&&myDashUsed)return;
+  if(type==="orb"&&myOrbUsed)return;
+  if(type==="spin"&&mySpinUsed)return;
+  // Нельзя атаковать в блоке
+  if(type==="attack"&&localMe?.blocking)return;
   if(type==="dash"){
     myDashUsed=true;
     if(localMe){localMe.dashTimer=DASH_DUR;localMe.dashVx=Math.cos(myAngle)*DASH_SPEED;localMe.dashVy=Math.sin(myAngle)*DASH_SPEED;}
   }
-  if(type==="orb")  myOrbUsed=true;
+  if(type==="orb") myOrbUsed=true;
   if(type==="spin"){
     mySpinUsed=true;
     if(localMe){localMe.spinTimer=SPIN_DUR;localMe._spinHit=false;}
@@ -482,7 +489,8 @@ function doOnlineAction(type){
   if(type==="attack"&&localMe){
     localMe.attackPhase="windup";localMe.attackPhaseTimer=100;localMe.attackAnim=1;
   }
-  socket.emit("action",{roomId,action:{type}});updateOnlineSkillBar();
+  socket.emit("action",{roomId,action:{type}});
+  updateOnlineSkillBar();
 }
 function updateOnlineSkillBar(){
   document.getElementById("online-dash-icon")?.classList.toggle("used",myDashUsed);
@@ -510,6 +518,8 @@ function sendOnlineInput(){
 
   // Предсказание — двигаем себя локально мгновенно
   if(localMe){
+    // Пересчитываем угол каждый кадр от актуальной позиции
+    updateOnlineAngle();
     const spd=inp.block?PLAYER_SPEED*0.5:PLAYER_SPEED;
     if(localMe.dashTimer>0){
       localMe.dashTimer-=dt;
