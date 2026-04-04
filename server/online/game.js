@@ -681,39 +681,79 @@ document.addEventListener("keyup",onKeyUp);
   if(!cv)return;
   const cx=cv.getContext("2d");
   let W,H;
-  const pts=[];
   function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;}
   resize();window.addEventListener("resize",resize);
-  for(let i=0;i<70;i++)pts.push({
-    x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
+
+  // Тёмная тема — синие частицы с линиями
+  const darkPts=[];
+  for(let i=0;i<70;i++) darkPts.push({
+    x:Math.random()*3000,y:Math.random()*2000,
     vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5,
-    r:Math.random()*2+.5,
-    hue:Math.random()*60+180, // синий-фиолетовый для dark
-    alpha:Math.random()*.6+.1,
+    r:Math.random()*2+.5, hue:190+Math.random()*40, alpha:Math.random()*.6+.15
   });
+
+  // Светлая тема — летящие кольца и искры
+  const lightRings=[];
+  for(let i=0;i<8;i++) lightRings.push({
+    x:Math.random()*3000,y:Math.random()*2000,
+    r:Math.random()*60+20, maxR:Math.random()*120+60,
+    speed:Math.random()*.4+.2, alpha:Math.random()*.4+.1,
+    hue:20+Math.random()*40
+  });
+  const lightPts=[];
+  for(let i=0;i<50;i++) lightPts.push({
+    x:Math.random()*3000,y:Math.random()*2000,
+    vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,
+    r:Math.random()*3+1, hue:20+Math.random()*40, alpha:Math.random()*.5+.1
+  });
+
   function isDark(){return document.body.classList.contains("dark");}
+
   function draw(){
     cx.clearRect(0,0,W,H);
-    const dark=isDark();
-    // Линии между точками
-    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
-      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.hypot(dx,dy);
-      if(d<130){
-        cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);
-        const a=(1-d/130)*(dark?.18:.12);
-        cx.strokeStyle=dark?`rgba(0,220,255,${a})`:`rgba(255,140,0,${a})`;
-        cx.lineWidth=1;cx.stroke();
+    if(isDark()){
+      // Линии
+      for(let i=0;i<darkPts.length;i++) for(let j=i+1;j<darkPts.length;j++){
+        const dx=darkPts[i].x-darkPts[j].x,dy=darkPts[i].y-darkPts[j].y,d=Math.hypot(dx,dy);
+        if(d<130){
+          cx.beginPath();cx.moveTo(darkPts[i].x,darkPts[i].y);cx.lineTo(darkPts[j].x,darkPts[j].y);
+          cx.strokeStyle=`rgba(0,160,255,${(1-d/130)*.15})`;cx.lineWidth=1;cx.stroke();
+        }
+      }
+      // Точки
+      darkPts.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+        cx.save();cx.shadowColor=`hsl(${p.hue},100%,65%)`;cx.shadowBlur=10;
+        cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        cx.fillStyle=`hsla(${p.hue},90%,65%,${p.alpha})`;cx.fill();cx.restore();
+      });
+    } else {
+      // Светлая — кольца
+      lightRings.forEach(r=>{
+        r.r+=r.speed;
+        if(r.r>r.maxR){r.r=10;r.x=Math.random()*W;r.y=Math.random()*H;}
+        const a=r.alpha*(1-r.r/r.maxR);
+        cx.beginPath();cx.arc(r.x,r.y,r.r,0,Math.PI*2);
+        cx.strokeStyle=`hsla(${r.hue},90%,55%,${a})`;cx.lineWidth=2;cx.stroke();
+      });
+      // Искры
+      lightPts.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+        cx.save();cx.shadowColor=`hsl(${p.hue},100%,55%)`;cx.shadowBlur=12;
+        cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        cx.fillStyle=`hsla(${p.hue},90%,55%,${p.alpha})`;cx.fill();cx.restore();
+      });
+      // Линии между искрами
+      for(let i=0;i<lightPts.length;i++) for(let j=i+1;j<lightPts.length;j++){
+        const dx=lightPts[i].x-lightPts[j].x,dy=lightPts[i].y-lightPts[j].y,d=Math.hypot(dx,dy);
+        if(d<100){
+          cx.beginPath();cx.moveTo(lightPts[i].x,lightPts[i].y);cx.lineTo(lightPts[j].x,lightPts[j].y);
+          cx.strokeStyle=`rgba(255,140,0,${(1-d/100)*.12})`;cx.lineWidth=1;cx.stroke();
+        }
       }
     }
-    pts.forEach(p=>{
-      p.x+=p.vx;p.y+=p.vy;
-      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
-      cx.save();
-      if(dark){cx.shadowColor=`hsl(${p.hue},100%,70%)`;cx.shadowBlur=8;}
-      cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      cx.fillStyle=dark?`hsla(${p.hue},90%,70%,${p.alpha})`:`hsla(${30+p.hue*.1},90%,55%,${p.alpha})`;
-      cx.fill();cx.restore();
-    });
     requestAnimationFrame(draw);
   }
   draw();
