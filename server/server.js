@@ -34,7 +34,7 @@ let waitingPlayer = null; // socket waiting for opponent
 // roomId -> { players: [socketA, socketB], state: {...} }
 const rooms = {};
 
-const TICK = 33; // ~30fps
+const TICK = 16; // ~60fps
 
 io.on("connection", (socket) => {
   console.log("connected:", socket.id);
@@ -111,6 +111,7 @@ io.on("connection", (socket) => {
 });
 
 // ---- Game state ----
+// Серверные константы — должны совпадать с клиентом
 const CANVAS_W = 760, CANVAS_H = 480;
 const RADIUS = 28, SWORD_LEN = 44;
 const ATTACK_RANGE = RADIUS * 2 + SWORD_LEN + 10;
@@ -118,8 +119,8 @@ const ATTACK_DMG = 12, DASH_DMG = 20, ORB_DMG = 15, SPIN_DMG = 20;
 const KNOCKBACK = 10, IFRAME_TIME = 200;
 const MAX_HP = 100;
 const PLAYER_SPEED = 3.5;
-const DASH_SPEED = 18, DASH_DUR = 120;
-const ORB_SPEED = 2.8, ORB_RADIUS = 10, ORB_HOMING = 0.06;
+const DASH_SPEED = 28, DASH_DUR = 200; // дольше и быстрее
+const ORB_SPEED = 5.0, ORB_RADIUS = 10, ORB_HOMING = 0.08; // ускорил орб
 const SPIN_RANGE = (RADIUS + SWORD_LEN + 14) * 1.5, SPIN_DUR = 600;
 
 function initState(d0, d1) {

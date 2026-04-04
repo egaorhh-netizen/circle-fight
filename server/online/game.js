@@ -2,8 +2,8 @@
 const CANVAS_W=760,CANVAS_H=480,RADIUS=28,SWORD_LEN=44,SWORD_W=6,MAX_HP=100;
 const ATTACK_RANGE=RADIUS*2+SWORD_LEN+10,ATTACK_DMG=12,ATTACK_CD=600;
 const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
-const DASH_SPEED=18,DASH_DMG=20,DASH_DUR=120;
-const ORB_DMG=15,ORB_SPEED=2.8,ORB_RADIUS=10,ORB_HOMING=0.06;
+const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
+const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
 const MAX_RATING=12500,RATING_PER_WIN=15;
 
@@ -261,12 +261,13 @@ function updateBotAI(dt){
   if(lowHp&&dist<bs.aggroDist)botMv(-dx,-dy,dist,spd);
   else if(justHit)botMv(-dx,-dy,dist,spd*1.8);
   else if(turtling){if(dist<ATTACK_RANGE*1.8)botMv(-dx,-dy,dist,spd*.6);else{if(bot.stateTimer<=0)bot.stateTimer=400+Math.random()*400;const side=bot.stateTimer>200?1:-1;bot.x=clamp(bot.x+(-dy/dist)*spd*side*bs.strafeSpeed,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+(dx/dist)*spd*side*bs.strafeSpeed,RADIUS,CANVAS_H-RADIUS);}}
-  else if(canAttack&&dist<=ATTACK_RANGE)doBotAttack();
+  else if(canAttack&&dist<=ATTACK_RANGE)doBotAIAttack();
   else if(canAttack)botMv(dx,dy,dist,spd);
   else{if(bot.stateTimer<=0)bot.stateTimer=Math.max(200,600-ratingBot*.3)+Math.random()*400;const side=1;const kd=dist>ATTACK_RANGE+15?spd*.5:dist<ATTACK_RANGE-15?-spd*.5:0;let mx=(-dy/dist)*spd*side*bs.strafeSpeed+(dx/dist)*kd,my=(dx/dist)*spd*side*bs.strafeSpeed+(dy/dist)*kd;const m=80,wf=spd*1.5;if(bot.x<m)mx+=wf*(1-bot.x/m);if(bot.x>CANVAS_W-m)mx-=wf*(1-(CANVAS_W-bot.x)/m);if(bot.y<m)my+=wf*(1-bot.y/m);if(bot.y>CANVAS_H-m)my-=wf*(1-(CANVAS_H-bot.y)/m);bot.x=clamp(bot.x+mx,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+my,RADIUS,CANVAS_H-RADIUS);}
 }
 function botMv(dx,dy,dist,spd){if(!dist)return;let mx=(dx/dist)*spd,my=(dy/dist)*spd;const m=80,wf=spd*1.2;if(bot.x<m)mx+=wf*(1-bot.x/m);if(bot.x>CANVAS_W-m)mx-=wf*(1-(CANVAS_W-bot.x)/m);if(bot.y<m)my+=wf*(1-bot.y/m);if(bot.y>CANVAS_H-m)my-=wf*(1-(CANVAS_H-bot.y)/m);bot.x=clamp(bot.x+mx,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+my,RADIUS,CANVAS_H-RADIUS);}
-function doBotAttack(){
+function doBotAIAttack(){
+  if(bot.attackTimer>0||bot.blocking)return;
   const bs=bot.stats;bot.attackTimer=bs.attackCd;bot.attackAnim=1;bot.attackPhase="windup";bot.attackPhaseTimer=120;
   if(player.iframeTimer>0)return;
   const dx=player.x-bot.x,dy=player.y-bot.y,dist=Math.hypot(dx,dy);if(dist>ATTACK_RANGE)return;
@@ -495,7 +496,7 @@ function onKeyDown(e){
 }
 function onKeyUp(e){keys[e.code]=false;}
 function onMouseMove(e){if(!canvas||!player)return;const r=canvas.getBoundingClientRect();player.angle=Math.atan2(e.clientY-r.top-player.y,e.clientX-r.left-player.x);}
-function onMouseDown(e){if(e.button===0&&gameRunning)doBotAttack();}
+function onMouseDown(e){if(e.button===0&&gameRunning&&e.target===canvas)doBotAttack();}
 
 function doBotAttack(){
   if(player.attackTimer>0||player.blocking)return;
