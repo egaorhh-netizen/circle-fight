@@ -216,9 +216,9 @@ body.dark #menu h1 span {
   animation: blueShift 3s ease-in-out infinite reverse;
 }
 @keyframes blueShift {
-  0%   { background-position: 0% 50%;   filter: drop-shadow(0 0 3px rgba(0,150,255,0.3)); }
-  50%  { background-position: 100% 50%; filter: drop-shadow(0 0 6px rgba(0,200,255,0.5)); }
-  100% { background-position: 0% 50%;   filter: drop-shadow(0 0 3px rgba(0,150,255,0.3)); }
+  0%   { background-position: 0% 50%;   filter: drop-shadow(0 0 6px rgba(0,150,255,0.5)); }
+  50%  { background-position: 100% 50%; filter: drop-shadow(0 0 12px rgba(0,200,255,0.8)); }
+  100% { background-position: 0% 50%;   filter: drop-shadow(0 0 6px rgba(0,150,255,0.5)); }
 }
 
 /* Светлая тема — золотой стиль */
@@ -237,40 +237,32 @@ body.light #menu h1 span {
   animation: goldShift 3s ease-in-out infinite reverse;
 }
 @keyframes goldShift {
-  0%   { background-position: 0% 50%;   filter: drop-shadow(0 0 3px rgba(255,160,0,0.35)); }
-  50%  { background-position: 100% 50%; filter: drop-shadow(0 0 7px rgba(255,200,0,0.55)); }
-  100% { background-position: 0% 50%;   filter: drop-shadow(0 0 3px rgba(255,160,0,0.35)); }
+  0%   { background-position: 0% 50%;   filter: drop-shadow(0 0 8px rgba(255,160,0,0.6)); }
+  50%  { background-position: 100% 50%; filter: drop-shadow(0 0 18px rgba(255,200,0,0.9)); }
+  100% { background-position: 0% 50%;   filter: drop-shadow(0 0 8px rgba(255,160,0,0.6)); }
 }
 
 #menu-glow { display: none; } /* убрали блюр */
 
 body.dark #menu button {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #ddd; letter-spacing: 0.5px;
-  transition: all 0.18s;
-  min-width: 220px;
+  background: rgba(0,220,255,0.06); border: 1px solid rgba(0,220,255,0.2);
+  color:#eee; backdrop-filter: blur(4px);
+  transition: all 0.2s;
 }
 body.dark #menu button:hover:not(.disabled) {
-  background: rgba(0,180,255,0.1);
-  border-color: rgba(0,180,255,0.35);
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,150,255,0.15);
+  background: rgba(0,220,255,0.15); border-color: rgba(0,220,255,0.5);
+  transform: scale(1.04) translateY(-2px);
+  box-shadow: 0 0 20px rgba(0,220,255,0.25), 0 4px 15px rgba(0,0,0,0.3);
 }
 body.light #menu button {
-  background: rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.12);
-  color: #444; letter-spacing: 0.5px;
-  transition: all 0.18s;
-  min-width: 220px;
+  background: rgba(255,140,0,0.08); border: 1px solid rgba(255,140,0,0.3);
+  color:#333; backdrop-filter: blur(4px);
+  transition: all 0.2s;
 }
 body.light #menu button:hover:not(.disabled) {
-  background: rgba(200,100,0,0.08);
-  border-color: rgba(200,100,0,0.3);
-  color: #222;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(200,100,0,0.12);
+  background: rgba(255,140,0,0.18); border-color: rgba(255,140,0,0.6);
+  transform: scale(1.04) translateY(-2px);
+  box-shadow: 0 0 20px rgba(255,140,0,0.3), 0 4px 15px rgba(0,0,0,0.1);
 }
 
 /* Убираем старый блюр за заголовком */
