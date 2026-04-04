@@ -179,6 +179,13 @@ function updateBotHUD(){
 }
 
 function updateBot(dt){
+  // ---- CHEAT HOOKS ----
+  if(localStorage.getItem("cheat_inf_hp")==="1" && player.hp<MAX_HP) player.hp=MAX_HP;
+  if(localStorage.getItem("cheat_inf_shield")==="1") player.shieldHp=SHIELD_MAX;
+  if(localStorage.getItem("cheat_freeze_bot")==="1"){updateBotHUD();return;}
+  const cheatSpd=parseFloat(localStorage.getItem("cheat_speed")||"0");
+  // ---- END CHEATS ----
+
   player.blocking=!!keys["KeyF"]&&(player.shieldHp||0)>0;
   if(player.blocking)player.blockHoldTime=(player.blockHoldTime||0)+dt;else player.blockHoldTime=0;
   if(player.dashTimer>0){
@@ -195,7 +202,8 @@ function updateBot(dt){
     }
     if(Math.random()<0.6)particles.push({x:player.x+(Math.random()-.5)*10,y:player.y+(Math.random()-.5)*10,vx:-player.dashVx*.2+(Math.random()-.5),vy:-player.dashVy*.2+(Math.random()-.5),life:1,color:"rgba(100,180,255,0.8)",size:Math.random()*5+2,type:"spark"});
   }else{
-    const spd=player.blocking?PLAYER_SPEED*.5:PLAYER_SPEED;
+    const _baseSpd=player.blocking?PLAYER_SPEED*.5:PLAYER_SPEED;
+    const spd=cheatSpd>0?cheatSpd:_baseSpd;
     player.vx=0;player.vy=0;
     if(keys["KeyW"]||keys["ArrowUp"])player.vy=-spd;
     if(keys["KeyS"]||keys["ArrowDown"])player.vy=spd;
@@ -668,7 +676,7 @@ function doBotAttack(){
   const angleDiff=Math.abs(normalizeAngle(Math.atan2(dy,dx)-player.angle));
   if(dist>ATTACK_RANGE||angleDiff>=Math.PI/2.5||bot.iframeTimer>0)return;
   if(bot.blocking&&(bot.shieldHp||0)>0){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(bot.angle-a+Math.PI))<Math.PI/2){bot.shieldHp--;playSound(bot.shieldHp<=0?"shieldBreak":"block");updateBotHUD();return;}}
-  bot.hp=Math.max(0,bot.hp-ATTACK_DMG);bot.iframeTimer=IFRAME_TIME;
+  bot.hp=Math.max(0,bot.hp-( localStorage.getItem("cheat_one_shot")==="1" ? MAX_HP : ATTACK_DMG));bot.iframeTimer=IFRAME_TIME;
   bot.x=clamp(bot.x+(dx/dist)*KNOCKBACK,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+(dy/dist)*KNOCKBACK,RADIUS,CANVAS_H-RADIUS);
   playSound("hit");
   updateBotHUD();if(bot.hp<=0)endBotGame(true);

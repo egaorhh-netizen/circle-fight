@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Circle Fight — Cheat Menu</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+
+  <div id="app">
+    <div id="header">
+      <div id="logo">
+        <span class="logo-circle"></span>
+        <div>
+          <div id="logo-title">Circle Fight</div>
+          <div id="logo-sub">Cheat Menu v1.0</div>
+        </div>
+      </div>
+      <div id="status-bar">
+        <span id="status-dot"></span>
+        <span id="status-text">Активен</span>
+      </div>
+    </div>
+
+    <div id="tabs">
+      <button class="tab active" onclick="switchTab('stats',this)">Статы</button>
+      <button class="tab" onclick="switchTab('game',this)">Игра</button>
+      <button class="tab" onclick="switchTab('visual',this)">Визуал</button>
+    </div>
+
+    <div id="content">
+
+      <!-- STATS TAB -->
+      <div id="tab-stats" class="tab-content active">
+        <div class="section-title">Рейтинг</div>
+        <div class="row">
+          <span class="label">Бот MMR</span>
+          <div class="controls">
+            <input type="number" id="bot-mmr" min="0" max="12500" value="0"/>
+            <button class="btn-apply" onclick="applyBotMMR()">Применить</button>
+          </div>
+        </div>
+        <div class="row">
+          <span class="label">Онлайн MMR</span>
+          <div class="controls">
+            <input type="number" id="online-mmr" min="0" max="12500" value="0"/>
+            <button class="btn-apply" onclick="applyOnlineMMR()">Применить</button>
+          </div>
+        </div>
+        <div class="row">
+          <span class="label">Макс MMR (12500)</span>
+          <button class="btn-danger" onclick="maxMMR()">Установить</button>
+        </div>
+        <div class="row">
+          <span class="label">Сбросить MMR</span>
+          <button class="btn-warn" onclick="resetMMR()">Сбросить</button>
+        </div>
+
+        <div class="section-title" style="margin-top:20px">Никнейм</div>
+        <div class="row">
+          <input type="text" id="nick-input" placeholder="Введи ник" maxlength="20" style="flex:1"/>
+          <button class="btn-apply" onclick="applyNick()">Применить</button>
+        </div>
+      </div>
+
+      <!-- GAME TAB -->
+      <div id="tab-game" class="tab-content">
+        <div class="section-title">Игра с ботом</div>
+        <div class="toggle-row">
+          <span class="label">Бесконечный щит</span>
+          <label class="toggle"><input type="checkbox" id="inf-shield" onchange="toggleInfShield(this)"/><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="label">Бесконечный HP</span>
+          <label class="toggle"><input type="checkbox" id="inf-hp" onchange="toggleInfHP(this)"/><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="label">Один удар убивает</span>
+          <label class="toggle"><input type="checkbox" id="one-shot" onchange="toggleOneShot(this)"/><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="label">Заморозить бота</span>
+          <label class="toggle"><input type="checkbox" id="freeze-bot" onchange="toggleFreezeBot(this)"/><span class="slider"></span></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <span class="label">Скорость игрока</span>
+          <div class="controls">
+            <input type="range" id="speed-slider" min="1" max="20" value="3" oninput="updateSpeed(this)"/>
+            <span id="speed-val">3.5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISUAL TAB -->
+      <div id="tab-visual" class="tab-content">
+        <div class="section-title">Скины</div>
+        <div class="row">
+          <span class="label">Разблокировать все скины</span>
+          <button class="btn-apply" onclick="unlockAllSkins()">Разблокировать</button>
+        </div>
+        <div class="row">
+          <span class="label">Выбрать скин меча</span>
+          <select id="skin-select" onchange="applySkin(this.value)">
+            <option value="default">Обычный</option>
+            <option value="fire">Огненный</option>
+            <option value="ice">Ледяной</option>
+            <option value="lightning">Молния</option>
+            <option value="shadow">Тень</option>
+            <option value="gold">Золотой</option>
+            <option value="plasma">Плазма</option>
+            <option value="void">Пустота</option>
+          </select>
+        </div>
+        <div class="section-title" style="margin-top:20px">Тема</div>
+        <div class="row">
+          <span class="label">Тема игры</span>
+          <div class="controls">
+            <button class="btn-apply" onclick="setTheme('dark')">Тёмная</button>
+            <button class="btn-apply" onclick="setTheme('light')">Светлая</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="footer">
+      <span id="footer-info">Изменения применяются через localStorage</span>
+      <button id="btn-open-game" onclick="openGame()">Открыть игру ↗</button>
+    </div>
+  </div>
+
+  <script src="cheat.js"></script>
+</body>
+</html>
