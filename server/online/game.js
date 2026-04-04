@@ -516,37 +516,26 @@ function sendOnlineInput(){
     if(fv)fv.textContent="FPS: "+currentFps;
   }
 
-  // Рендер — используем localMe для себя, localState для соперника
+  // Рендер — localMe для себя, localState для соперника
   if(localState&&localMe&&mySide!==null){
-    // Временно подменяем позицию себя на предсказанную
-    const saved={x:localState.players[mySide].x,y:localState.players[mySide].y,
-      angle:localState.players[mySide].angle,blocking:localState.players[mySide].blocking,
-      attackPhase:localState.players[mySide].attackPhase,attackAnim:localState.players[mySide].attackAnim,
-      spinTimer:localState.players[mySide].spinTimer,iframeTimer:localState.players[mySide].iframeTimer};
-    Object.assign(localState.players[mySide],{
-      x:localMe.x,y:localMe.y,angle:localMe.angle,blocking:localMe.blocking,
-      attackPhase:localMe.attackPhase,attackAnim:localMe.attackAnim,
-      spinTimer:localMe.spinTimer,iframeTimer:localMe.iframeTimer
-    });
-    renderOnline(localState);
-    Object.assign(localState.players[mySide],saved);
-  } else if(localState){
-    renderOnline(localState);
+    const opp=localState.players[1-mySide];
+    renderOnline(localMe, opp, localState.orbs);
+  } else if(localState&&mySide!==null){
+    renderOnline(localState.players[mySide], localState.players[1-mySide], localState.orbs);
   }
 
   requestAnimationFrame(sendOnlineInput);
 }
 
-function renderOnline(state){
+function renderOnline(me, opp, orbs){
   if(!onlineCtx)return;
   onlineCtx.clearRect(0,0,CANVAS_W,CANVAS_H);
-  const me=state.players[mySide],opp=state.players[1-mySide];
   document.getElementById("online-player-hp-bar").style.width=(Math.max(0,me.hp)/MAX_HP*100)+"%";
   document.getElementById("online-bot-hp-bar").style.width=(Math.max(0,opp.hp)/MAX_HP*100)+"%";
   document.getElementById("online-player-hp-text").textContent=Math.round(Math.max(0,me.hp));
   document.getElementById("online-bot-hp-text").textContent=Math.round(Math.max(0,opp.hp));
   updateOnlineParticles();
-  state.orbs?.forEach(o=>{
+  (orbs||[]).forEach(o=>{
     const hue=o.owner===mySide?200:0;onlineCtx.save();onlineCtx.shadowColor=`hsl(${hue+20},100%,65%)`;onlineCtx.shadowBlur=20;
     const grad=onlineCtx.createRadialGradient(o.x,o.y,0,o.x,o.y,12);grad.addColorStop(0,`hsl(${hue+60},100%,95%)`);grad.addColorStop(1,`hsl(${hue},100%,40%)`);
     onlineCtx.beginPath();onlineCtx.arc(o.x,o.y,10,0,Math.PI*2);onlineCtx.fillStyle=grad;onlineCtx.fill();onlineCtx.restore();
