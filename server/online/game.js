@@ -45,7 +45,16 @@ function saveNickname() {
   document.getElementById("nickname-display").style.display="";
   document.getElementById("nickname-display").textContent=nickname;
 }
-function changeLanguage(lang){currentLang=lang;saveAll();}
+function changeLanguage(lang){
+  currentLang=lang;saveAll();
+  const isEn=lang==="en";
+  document.getElementById("title").textContent="Circle Fight";
+  document.querySelector("#menu button:nth-child(3)").textContent=isEn?"Play vs Bot":"Играть с ботом";
+  document.querySelector("#menu button:nth-child(4)").textContent=isEn?"Play Online":"Играть онлайн";
+  document.querySelector("#menu button:nth-child(5)").textContent=isEn?"Inventory":"Инвентарь";
+  document.querySelector("#menu button:nth-child(6)").textContent=isEn?"Settings":"Настройки";
+  document.getElementById("theme-btn").textContent=currentTheme==="dark"?(isEn?"Light":"Светлая"):(isEn?"Dark":"Тёмная");
+}
 function toggleTheme(){
   currentTheme=currentTheme==="dark"?"light":"dark";
   document.body.className=currentTheme;
@@ -283,11 +292,14 @@ let roomId=null,mySide=null,onlineRunning=false,onlineCanvas,onlineCtx;
 let localState=null,onlineParticles=[];
 let myDashUsed=false,myOrbUsed=false,mySpinUsed=false,myAngle=0;
 let searchInterval=null,searchSeconds=0;
+let opponentNickname="Соперник";
 
 socket.on("connect_error",()=>{document.getElementById("online-msg").style.display="block";document.getElementById("online-msg").textContent="⚠ Нет соединения с сервером";});
 socket.on("waiting",()=>startSearchTimer());
 socket.on("matchFound",({roomId:rid,side,opponent})=>{
-  roomId=rid;mySide=side;stopSearchTimer();
+  roomId=rid;mySide=side;
+  opponentNickname=opponent?.nickname||"Соперник";
+  stopSearchTimer();
   setTimeout(startOnlineGame,800);
 });
 socket.on("state",(state)=>{
@@ -340,6 +352,11 @@ function startOnlineGame(){
   onlineCanvas=document.getElementById("online-canvas");
   onlineCanvas.width=CANVAS_W;onlineCanvas.height=CANVAS_H;onlineCtx=onlineCanvas.getContext("2d");
   onlineParticles=[];myDashUsed=false;myOrbUsed=false;mySpinUsed=false;onlineRunning=true;
+  // Показать ник соперника
+  const bl=document.getElementById("online-bot-label");
+  if(bl)bl.textContent=opponentNickname;
+  const pl=document.getElementById("online-player-label");
+  if(pl)pl.textContent=nickname;
   updateOnlineSkillBar();
   onlineCanvas.addEventListener("mousemove",onOnlineMouseMove);
   onlineCanvas.addEventListener("mousedown",onOnlineMouseDown);
@@ -385,18 +402,6 @@ function updateOnlineSkillBar(){
   if(!onlineRunning)return;
   const inp={up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),block:!!onlineKeys["KeyF"],angle:myAngle};
   socket.emit("input",{roomId,input:inp});
-  // Клиент-сайд предсказание — двигаем себя локально
-  if(localState&&mySide!==null){
-    const me=localState.players[mySide];
-    const spd=inp.block?PLAYER_SPEED*.5:PLAYER_SPEED;
-    if(inp.up)me.y=clamp(me.y-spd,RADIUS,CANVAS_H-RADIUS);
-    if(inp.down)me.y=clamp(me.y+spd,RADIUS,CANVAS_H-RADIUS);
-    if(inp.left)me.x=clamp(me.x-spd,RADIUS,CANVAS_W-RADIUS);
-    if(inp.right)me.x=clamp(me.x+spd,RADIUS,CANVAS_W-RADIUS);
-    me.angle=myAngle;
-    me.blocking=inp.block;
-    renderOnline(localState);
-  }
   requestAnimationFrame(sendOnlineInput);
 }
 
