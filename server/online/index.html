@@ -5,134 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Circle Fight</title>
   <link rel="stylesheet" href="style.css"/>
-  <style>
-    #search-bar {
-      display: none; position: fixed; top: 0; left: 0; right: 0;
-      background: rgba(0,180,80,0.15); border-bottom: 2px solid #0f0;
-      padding: 8px 20px; align-items: center; justify-content: center;
-      gap: 16px; z-index: 200; font-size: 0.95rem;
-    }
-    #search-bar.visible { display: flex; }
-    #search-dot { width:10px;height:10px;border-radius:50%;background:#0f0;animation:pulse 1s infinite; }
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-    #search-timer { color:#0f0;font-weight:700; }
-    #search-label { color:#0f0; }
-    .rating-row { display:flex;gap:20px;justify-content:center;font-size:0.85rem;opacity:0.7; }
-  </style>
 </head>
 <body class="dark">
+  <canvas id="menu-bg"></canvas>
   <span id="nickname-display" onclick="editNickname()" title="Нажмите чтобы изменить">player</span>
   <input id="nickname-input" type="text" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter')saveNickname()"/>
 
-  <!-- Поиск игры (сверху) -->
-  <div id="search-bar">
-    <div id="search-dot"></div>
-    <span id="search-label">Поиск игры</span>
-    <span id="search-timer">0:00</span>
-    <button onclick="cancelSearch()" style="padding:4px 12px;font-size:0.8rem">Отмена</button>
-  </div>
-
-  <!-- МЕНЮ -->
+  <!-- MENU -->
   <div id="menu">
-    <h1 id="title">Circle Fight</h1>
-    <div class="rating-row">
-      <span id="rating-bot-display">🤖 MMR: 0</span>
-      <span id="rating-online-display">🌐 MMR: 0</span>
-    </div>
-    <button onclick="startBotGame()">Играть с ботом</button>
-    <button onclick="findMatch()">Играть онлайн</button>
-    <button onclick="showInventory()">Инвентарь</button>
-    <button onclick="showSettings()">Настройки</button>
-    <span id="online-msg" style="color:#e74c3c;font-weight:bold;display:none"></span>
+    <div id="menu-glow"></div>
+    <h1 id="title">Circle<br><span>Fight</span></h1>
+    <span id="rating-display">Рейтинг: 0 / 12500</span>
+    <button id="btn-play-bot" onclick="startBotGame()">⚔ Играть с ботом</button>
+    <button id="btn-play-online" onclick="findMatch()">🌐 Играть онлайн</button>
+    <span id="online-msg"></span>
+    <button onclick="showInventory()">🗡 Инвентарь</button>
+    <button id="btn-settings" onclick="showSettings()">⚙ Настройки</button>
   </div>
 
-  <!-- ИНВЕНТАРЬ -->
+  <!-- INVENTORY -->
   <div id="inventory" class="hidden">
-    <h2>Инвентарь</h2>
-    <p style="opacity:0.5;font-size:0.9rem">Выбери скин меча</p>
+    <h2 id="inv-title">Инвентарь</h2>
+    <p id="inv-subtitle">Выбери скин меча</p>
     <div id="sword-grid"></div>
-    <button onclick="showMenu()">Назад</button>
+    <button id="btn-inv-back" onclick="showMenu()">Назад</button>
   </div>
 
-  <!-- НАСТРОЙКИ -->
+  <!-- SETTINGS -->
   <div id="settings" class="hidden">
     <h2 id="settings-title">Настройки</h2>
     <div class="setting-row">
-      <label>Язык:</label>
+      <label id="label-lang">Язык:</label>
       <select id="lang-select" onchange="changeLanguage(this.value)">
         <option value="ru">Русский</option>
         <option value="en">English</option>
       </select>
     </div>
     <div class="setting-row">
-      <label>Тема:</label>
+      <label id="label-theme">Тема:</label>
       <button id="theme-btn" onclick="toggleTheme()">Светлая</button>
     </div>
-    <div class="setting-row">
-      <label>FPS и пинг (онлайн):</label>
-      <button id="show-fps-btn" onclick="toggleFpsDisplay()">Вкл</button>
-    </div>
-    <button onclick="showMenu()">Назад</button>
+    <button id="btn-back" onclick="showMenu()">Назад</button>
   </div>
 
-  <!-- ИГРА С БОТОМ -->
+  <!-- GAME -->
   <div id="game-screen" class="hidden">
     <div id="hud">
-      <div class="hp-block">
+      <div class="hud-player">
         <span id="player-label">Игрок</span>
         <div class="hp-bar-bg"><div id="player-hp-bar" class="hp-bar player-color"></div></div>
         <span id="player-hp-text">100</span>
+        <div class="shield-bar-bg"><div id="player-shield-bar" class="shield-bar"></div></div>
+        <span id="player-shield-icon">🛡</span>
       </div>
-      <div class="hp-block">
+      <div class="hud-player">
         <span id="bot-label">Бот</span>
         <div class="hp-bar-bg"><div id="bot-hp-bar" class="hp-bar bot-color"></div></div>
         <span id="bot-hp-text">100</span>
+        <div class="shield-bar-bg"><div id="bot-shield-bar" class="shield-bar bot-shield"></div></div>
+        <span id="bot-shield-icon">🛡</span>
       </div>
     </div>
+    <span id="shield-hint">Щит [F]</span>
     <canvas id="canvas"></canvas>
     <div id="skill-bar">
       <div id="dash-icon" class="skill-icon" title="Дэш [Q]">Q</div>
       <div id="orb-icon" class="skill-icon orb-skill" title="Орб [E]">E</div>
       <div id="spin-icon" class="skill-icon spin-skill" title="Спин [R]">R</div>
     </div>
-    <button id="btn-menu" onclick="showMenu()">В меню</button>
+    <button id="btn-menu" onclick="backToMenu()">В меню</button>
   </div>
 
-  <!-- ОНЛАЙН ИГРА -->
-  <div id="online-screen" class="hidden" style="position:relative">
-    <div id="hud">
-      <div class="hp-block">
-        <span id="online-player-label">Я</span>
-        <div class="hp-bar-bg"><div id="online-player-hp-bar" class="hp-bar player-color"></div></div>
-        <span id="online-player-hp-text">100</span>
-      </div>
-      <div class="hp-block">
-        <span id="online-bot-label">Соперник</span>
-        <div class="hp-bar-bg"><div id="online-bot-hp-bar" class="hp-bar bot-color"></div></div>
-        <span id="online-bot-hp-text">100</span>
-      </div>
-    </div>
-    <canvas id="online-canvas"></canvas>
-    <div id="fps-overlay" style="display:none;position:absolute;bottom:8px;left:8px;font-size:0.75rem;opacity:0.7;font-family:monospace;pointer-events:none;color:#0f0;">
-      <span id="fps-val">FPS: --</span> | <span id="ping-val">Пинг: --ms</span>
-    </div>
-    <div id="skill-bar">
-      <div id="online-dash-icon" class="skill-icon">Q</div>
-      <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
-      <div id="online-spin-icon" class="skill-icon spin-skill">R</div>
-    </div>
-    <button id="btn-menu" onclick="leaveOnlineGame()">В меню</button>
-  </div>
-
-  <!-- КОНЕЦ ИГРЫ -->
+  <!-- GAME OVER -->
   <div id="gameover" class="hidden">
-    <h2 id="gameover-text"></h2>
+    <h2 id="gameover-text">Игра окончена</h2>
     <span id="gameover-rating"></span>
-    <button id="gameover-again" onclick="restartGame()">Заново</button>
-    <button onclick="showMenu()">В меню</button>
+    <button id="btn-restart" onclick="startGame()">Заново</button>
+    <button id="btn-menu2" onclick="backToMenu()">В меню</button>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
   <script src="swords.js"></script>
   <script src="game.js"></script>
 </body>

@@ -5,6 +5,7 @@ const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
 const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
 const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
+const SHIELD_MAX=5;
 const MAX_RATING=12500,RATING_PER_WIN=15;
 
 // ---- STORAGE ----
@@ -124,12 +125,12 @@ function startBotGame(){
   const bs=botStats(),bsw=pickBotSword();
   player={x:180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:0,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockHoldTime:0,
-    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0};
+    dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,orbUsed:false,spinUsed:false,spinTimer:0,spinAngle:0,shieldHp:SHIELD_MAX};
   bot={x:CANVAS_W-180,y:CANVAS_H/2,vx:0,vy:0,hp:MAX_HP,attackTimer:0,iframeTimer:0,angle:Math.PI,
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockTimer:0,reactionTimer:0,
     stateTimer:0,dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,
     dashCooldown:3000+Math.random()*4000,orbUsed:false,orbCooldown:5000+Math.random()*5000,
-    spinUsed:false,spinTimer:0,spinAngle:0,spinCooldown:4000+Math.random()*4000,sword:bsw,stats:bs};
+    spinUsed:false,spinTimer:0,spinAngle:0,spinCooldown:4000+Math.random()*4000,sword:bsw,stats:bs,shieldHp:SHIELD_MAX};
   particles=[];orbs=[];gameRunning=true;
   updateBotHUD();
   canvas.addEventListener("mousedown",onMouseDown);
@@ -165,13 +166,20 @@ function updateBotHUD(){
   document.getElementById("bot-hp-bar").style.width=(bh/MAX_HP*100)+"%";
   document.getElementById("player-hp-text").textContent=Math.round(ph);
   document.getElementById("bot-hp-text").textContent=Math.round(bh);
+  const psb=document.getElementById("player-shield-bar");
+  const bsb=document.getElementById("bot-shield-bar");
+  if(psb){psb.style.width=(player.shieldHp/SHIELD_MAX*100)+"%";psb.classList.toggle("broken",player.shieldHp<=0);}
+  if(bsb){bsb.style.width=(bot.shieldHp/SHIELD_MAX*100)+"%";bsb.classList.toggle("broken",bot.shieldHp<=0);}
+  const psi=document.getElementById("player-shield-icon");const bsi=document.getElementById("bot-shield-icon");
+  if(psi)psi.textContent=player.shieldHp>0?"🛡":"💔";
+  if(bsi)bsi.textContent=bot.shieldHp>0?"🛡":"💔";
   const di=document.getElementById("dash-icon");if(di)di.classList.toggle("used",!!player.dashUsed);
   const oi=document.getElementById("orb-icon");if(oi)oi.classList.toggle("used",!!player.orbUsed);
   const si=document.getElementById("spin-icon");if(si)si.classList.toggle("used",!!player.spinUsed);
 }
 
 function updateBot(dt){
-  player.blocking=!!keys["KeyF"];
+  player.blocking=!!keys["KeyF"]&&(player.shieldHp||0)>0;
   if(player.blocking)player.blockHoldTime=(player.blockHoldTime||0)+dt;else player.blockHoldTime=0;
   if(player.dashTimer>0){
     player.dashTimer-=dt;
@@ -273,7 +281,7 @@ function doBotAIAttack(){
   const bs=bot.stats;bot.attackTimer=bs.attackCd;bot.attackAnim=1;bot.attackPhase="windup";bot.attackPhaseTimer=120;
   if(player.iframeTimer>0)return;
   const dx=player.x-bot.x,dy=player.y-bot.y,dist=Math.hypot(dx,dy);if(dist>ATTACK_RANGE)return;
-  if(player.blocking){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(player.angle-a))<Math.PI/1.8)return;}
+  if(player.blocking&&(player.shieldHp||0)>0){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(player.angle-a))<Math.PI/1.8){player.shieldHp--;updateBotHUD();return;}}
   player.hp=Math.max(0,player.hp-bs.damage);player.iframeTimer=IFRAME_TIME;
   player.x=clamp(player.x+(dx/dist)*KNOCKBACK,RADIUS,CANVAS_W-RADIUS);player.y=clamp(player.y+(dy/dist)*KNOCKBACK,RADIUS,CANVAS_H-RADIUS);
   updateBotHUD();if(player.hp<=0)endBotGame(false);
@@ -647,7 +655,7 @@ function doBotAttack(){
   const dx=bot.x-player.x,dy=bot.y-player.y,dist=Math.hypot(dx,dy);
   const angleDiff=Math.abs(normalizeAngle(Math.atan2(dy,dx)-player.angle));
   if(dist>ATTACK_RANGE||angleDiff>=Math.PI/2.5||bot.iframeTimer>0)return;
-  if(bot.blocking){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(bot.angle-a+Math.PI))<Math.PI/2)return;}
+  if(bot.blocking&&(bot.shieldHp||0)>0){const a=Math.atan2(bot.y-player.y,bot.x-player.x);if(Math.abs(normalizeAngle(bot.angle-a+Math.PI))<Math.PI/2){bot.shieldHp--;updateBotHUD();return;}}
   bot.hp=Math.max(0,bot.hp-ATTACK_DMG);bot.iframeTimer=IFRAME_TIME;
   bot.x=clamp(bot.x+(dx/dist)*KNOCKBACK,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+(dy/dist)*KNOCKBACK,RADIUS,CANVAS_H-RADIUS);
   updateBotHUD();if(bot.hp<=0)endBotGame(true);
@@ -658,3 +666,22 @@ function doBotSpin(){if(player.spinUsed||player.spinTimer>0||player.blocking)ret
 
 document.addEventListener("keydown",onKeyDown);
 document.addEventListener("keyup",onKeyUp);
+
+// ---- MENU BACKGROUND ANIMATION ----
+(function initMenuBg(){
+  const cv=document.getElementById("menu-bg");
+  if(!cv)return;
+  const cx=cv.getContext("2d");
+  let W,H;
+  const pts=[];
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  for(let i=0;i<60;i++)pts.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+.5,hue:Math.random()*60+200,alpha:Math.random()*.5+.1});
+  function draw(){
+    cx.clearRect(0,0,W,H);
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.hypot(dx,dy);if(d<120){cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.strokeStyle=`rgba(100,120,255,${(1-d/120)*.15})`;cx.lineWidth=1;cx.stroke();}}
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fillStyle=`hsla(${p.hue},80%,70%,${p.alpha})`;cx.fill();});
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();

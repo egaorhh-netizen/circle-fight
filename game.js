@@ -253,6 +253,7 @@ const DASH_DUR    = 120; // мс полёта
 const SPIN_DMG    = 20;
 const SPIN_DUR    = 600; // мс полного оборота
 const SPIN_RANGE  = (RADIUS + SWORD_LEN + 14) * 1.5;
+const SHIELD_MAX  = 5;   // ударов до поломки
 
 let canvas, ctx, animId, lastTime = 0;
 let keys = {};
@@ -289,6 +290,7 @@ function startGame() {
     attackPhaseTimer: 0,
     blocking: false,
     blockHoldTime: 0,
+    shieldHp: SHIELD_MAX,   // прочность щита
     dashUsed: false,
     dashTimer: 0,   // > 0 = летим
     dashVx: 0, dashVy: 0,
@@ -312,6 +314,7 @@ function startGame() {
     attackPhaseTimer: 0,
     blocking: false,
     blockTimer: 0,
+    shieldHp: SHIELD_MAX,   // прочность щита бота
     reactionTimer: 0,
     stateTimer: 0,
     dashUsed: false,
@@ -364,7 +367,7 @@ function gameLoop(ts) {
 // ---- UPDATE ----
 function update(dt) {
   // Player blocking
-  player.blocking = !!keys["KeyF"];
+  player.blocking = !!keys["KeyF"] && player.shieldHp > 0;
   if (player.blocking) {
     player.blockHoldTime = (player.blockHoldTime || 0) + dt;
   } else {
@@ -716,10 +719,14 @@ function botAttack() {
   if (dist > ATTACK_RANGE) return;
 
   // Проверка блока игрока
-  if (player.blocking) {
+  if (player.blocking && player.shieldHp > 0) {
     const toBotAngle = Math.atan2(bot.y - player.y, bot.x - player.x);
     const diff = Math.abs(normalizeAngle(player.angle - toBotAngle));
-    if (diff < Math.PI / 1.8) return;
+    if (diff < Math.PI / 1.8) {
+      player.shieldHp--;
+      updateHUD();
+      return;
+    }
   }
 
   player.hp = Math.max(0, player.hp - bs.damage);
@@ -747,10 +754,14 @@ function playerAttack() {
   const angleDiff = Math.abs(normalizeAngle(Math.atan2(dy, dx) - player.angle));
   if (dist > ATTACK_RANGE || angleDiff >= Math.PI / 2.5 || bot.iframeTimer > 0) return;
 
-  if (bot.blocking) {
+  if (bot.blocking && bot.shieldHp > 0) {
     const toBotAngle = Math.atan2(bot.y - player.y, bot.x - player.x);
     const diff = Math.abs(normalizeAngle(bot.angle - toBotAngle + Math.PI));
-    if (diff < Math.PI / 2) return;
+    if (diff < Math.PI / 2) {
+      bot.shieldHp--;
+      updateHUD();
+      return;
+    }
   }
 
   bot.hp = Math.max(0, bot.hp - ATTACK_DMG);
@@ -1051,6 +1062,21 @@ function updateHUD() {
   document.getElementById("bot-hp-bar").style.width    = (bh / MAX_HP * 100) + "%";
   document.getElementById("player-hp-text").textContent = Math.round(ph);
   document.getElementById("bot-hp-text").textContent    = Math.round(bh);
+  // Щит
+  const psb = document.getElementById("player-shield-bar");
+  const bsb = document.getElementById("bot-shield-bar");
+  const psi = document.getElementById("player-shield-icon");
+  const bsi = document.getElementById("bot-shield-icon");
+  if (psb) {
+    psb.style.width = (player.shieldHp / SHIELD_MAX * 100) + "%";
+    psb.classList.toggle("broken", player.shieldHp <= 0);
+    if (psi) psi.textContent = player.shieldHp > 0 ? "🛡" : "💔";
+  }
+  if (bsb) {
+    bsb.style.width = (bot.shieldHp / SHIELD_MAX * 100) + "%";
+    bsb.classList.toggle("broken", bot.shieldHp <= 0);
+    if (bsi) bsi.textContent = bot.shieldHp > 0 ? "🛡" : "💔";
+  }
   const di = document.getElementById("dash-icon");
   if (di) di.classList.toggle("used", !!player.dashUsed);
   const oi = document.getElementById("orb-icon");
@@ -1142,3 +1168,66 @@ document.addEventListener("keydown", onKeyDown);
 document.addEventListener("keyup",   onKeyUp);
 document.getElementById("nickname-display").textContent = nickname;
 
+
+// ---- MENU BACKGROUND ANIMATION ----
+(function initMenuBg(){
+  const cv = document.getElementById("menu-bg");
+  if (!cv) return;
+  const cx = cv.getContext("2d");
+  let W, H;
+  const pts = [];
+
+  function resize(){
+    W = cv.width  = window.innerWidth;
+    H = cv.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  // Создаём частицы
+  for (let i = 0; i < 60; i++) {
+    pts.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 2 + 0.5,
+      hue: Math.random() * 60 + 200, // синий-фиолетовый
+      alpha: Math.random() * 0.5 + 0.1,
+    });
+  }
+
+  function drawMenuBg(){
+    cx.clearRect(0, 0, W, H);
+
+    // Соединяем близкие точки линиями
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i+1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 120) {
+          cx.beginPath();
+          cx.moveTo(pts[i].x, pts[i].y);
+          cx.lineTo(pts[j].x, pts[j].y);
+          cx.strokeStyle = `rgba(100,120,255,${(1 - dist/120) * 0.15})`;
+          cx.lineWidth = 1;
+          cx.stroke();
+        }
+      }
+    }
+
+    // Рисуем точки
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      cx.beginPath();
+      cx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      cx.fillStyle = `hsla(${p.hue},80%,70%,${p.alpha})`;
+      cx.fill();
+    });
+
+    requestAnimationFrame(drawMenuBg);
+  }
+  drawMenuBg();
+})();

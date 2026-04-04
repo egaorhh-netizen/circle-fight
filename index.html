@@ -1,24 +1,26 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Circle Fight</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="dark">
+  <canvas id="menu-bg"></canvas>
   <span id="nickname-display" onclick="editNickname()" title="Нажмите чтобы изменить">player</span>
-  <input id="nickname-input" type="text" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter')saveNickname()" />
+  <input id="nickname-input" type="text" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter')saveNickname()"/>
 
   <!-- MENU -->
   <div id="menu">
-    <h1 id="title">Circle Fight</h1>
+    <div id="menu-glow"></div>
+    <h1 id="title">Circle<br><span>Fight</span></h1>
     <span id="rating-display">Рейтинг: 0 / 12500</span>
-    <button id="btn-play-bot" onclick="startGame()">Играть с ботом</button>
-    <button id="btn-play-online" onclick="window.location='https://circle-fight-production.up.railway.app'">Играть онлайн</button>
+    <button id="btn-play-bot" onclick="startGame()">⚔ Играть с ботом</button>
+    <button id="btn-play-online" onclick="window.location='https://circle-fight-production.up.railway.app'">🌐 Играть онлайн</button>
     <span id="online-msg"></span>
-    <button onclick="showInventory()">Инвентарь</button>
-    <button id="btn-settings" onclick="showSettings()">Настройки</button>
+    <button onclick="showInventory()">🗡 Инвентарь</button>
+    <button id="btn-settings" onclick="showSettings()">⚙ Настройки</button>
   </div>
 
   <!-- INVENTORY -->
@@ -49,15 +51,19 @@
   <!-- GAME -->
   <div id="game-screen" class="hidden">
     <div id="hud">
-      <div class="hp-block">
+      <div class="hud-player">
         <span id="player-label">Игрок</span>
         <div class="hp-bar-bg"><div id="player-hp-bar" class="hp-bar player-color"></div></div>
         <span id="player-hp-text">100</span>
+        <div class="shield-bar-bg"><div id="player-shield-bar" class="shield-bar"></div></div>
+        <span id="player-shield-icon">🛡</span>
       </div>
-      <div class="hp-block">
+      <div class="hud-player">
         <span id="bot-label">Бот</span>
         <div class="hp-bar-bg"><div id="bot-hp-bar" class="hp-bar bot-color"></div></div>
         <span id="bot-hp-text">100</span>
+        <div class="shield-bar-bg"><div id="bot-shield-bar" class="shield-bar bot-shield"></div></div>
+        <span id="bot-shield-icon">🛡</span>
       </div>
     </div>
     <span id="shield-hint">Щит [F]</span>
