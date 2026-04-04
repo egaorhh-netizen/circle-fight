@@ -455,10 +455,15 @@ function onOnlineKeyUp(e){onlineKeys[e.code]=false;}
 function onOnlineMouseMove(e){
   if(!onlineCanvas)return;
   const r=onlineCanvas.getBoundingClientRect();
-  const ref=localMe||localState?.players[mySide];
-  if(!ref)return;
-  myAngle=Math.atan2(e.clientY-r.top-ref.y,e.clientX-r.left-ref.x);
-  if(localMe)localMe.angle=myAngle;
+  // Учитываем масштаб канваса (CSS размер vs реальный размер)
+  const scaleX = CANVAS_W / r.width;
+  const scaleY = CANVAS_H / r.height;
+  const mx = (e.clientX - r.left) * scaleX;
+  const my = (e.clientY - r.top)  * scaleY;
+  const px = localMe ? localMe.x : (localState?.players[mySide]?.x || CANVAS_W/2);
+  const py = localMe ? localMe.y : (localState?.players[mySide]?.y || CANVAS_H/2);
+  myAngle = Math.atan2(my - py, mx - px);
+  if(localMe) localMe.angle = myAngle;
   socket.emit("action",{roomId,action:{type:"angle",angle:myAngle}});
 }
 function onOnlineMouseDown(e){if(e.button===0)doOnlineAction("attack");}
@@ -517,8 +522,7 @@ function sendOnlineInput(){
       if(inp.right)localMe.x=clamp(localMe.x+spd,RADIUS,CANVAS_W-RADIUS);
     }
     localMe.angle=myAngle;
-    localMe.blocking=inp.block;
-    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
+    localMe.blocking=inp.block;    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
     tickAttackAnim(localMe,dt);
     if(localMe.spinTimer>0){
       localMe.spinTimer-=dt;
