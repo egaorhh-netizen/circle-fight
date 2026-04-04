@@ -351,16 +351,14 @@ socket.on("state",(state)=>{
     });
   }
   localState.orbs=state.orbs;
-  // Синхронизируем localMe с сервером
+  // Синхронизируем localMe с сервером — только важные данные, НЕ позицию
   if(localMe&&mySide!==null){
     const srv=state.players[mySide];
-    const drift=Math.hypot(localMe.x-srv.x,localMe.y-srv.y);
-    if(drift>80){localMe.x=srv.x;localMe.y=srv.y;}
-    else{localMe.x+=(srv.x-localMe.x)*0.1;localMe.y+=(srv.y-localMe.y)*0.1;}
-    localMe.hp=srv.hp;localMe.iframeTimer=srv.iframeTimer;
-    localMe.dashTimer=srv.dashTimer;localMe.dashVx=srv.dashVx;localMe.dashVy=srv.dashVy;
-    localMe.attackPhase=srv.attackPhase;localMe.attackAnim=srv.attackAnim;
-    localMe.spinTimer=srv.spinTimer;
+    // Позицию НЕ трогаем — localMe двигается локально
+    localMe.hp=srv.hp;
+    localMe.iframeTimer=srv.iframeTimer;
+    // Дэш синхронизируем только если сервер его остановил
+    if(srv.dashTimer<=0&&localMe.dashTimer>0) localMe.dashTimer=0;
   }
 });
 socket.on("gameOver",({won})=>{
@@ -382,6 +380,7 @@ socket.on("opponentLeft",()=>{
 });
 
 function startSearchTimer(){
+  clearInterval(searchInterval); // убиваем старый если был
   searchSeconds=0;document.getElementById("search-bar").classList.add("visible");
   searchInterval=setInterval(()=>{searchSeconds++;const m=Math.floor(searchSeconds/60),s=searchSeconds%60;document.getElementById("search-timer").textContent=m+":"+(s<10?"0":"")+s;},1000);
 }
