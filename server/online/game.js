@@ -5,8 +5,7 @@ const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
 const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
 const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
-const SHIELD_MAX=5;
-const MAX_RATING=12500,RATING_PER_WIN=15;
+const SHIELD_MAX=5;const MAX_RATING=12500,RATING_PER_WIN=15;
 
 // ---- STORAGE ----
 let ratingBot    = parseInt(localStorage.getItem("cf_rating")        || "0");
@@ -102,7 +101,8 @@ function buildInventory() {
 let canvas,ctx,animId,lastTime=0,keys={},player,bot,gameRunning=false,particles=[],orbs=[];
 
 function botStats(){
-  const tier=Math.floor(ratingBot/100),tc=Math.min(tier,5),ag=tier>=3;
+  const tier=Math.min(Math.floor(ratingBot/100), 7); // макс тир 7 = 700 ммр
+  const tc=Math.min(tier,5),ag=tier>=3;
   return{speed:2+tc,attackCd:Math.max(300,1000-tier*30),reactionTime:Math.max(50,600-tier*20),
     blockChance:Math.min(0.95,0.1+tier*0.05),blockDuration:Math.min(2000,200+tier*80),
     damage:8+tc,retreatHp:ag?0:0.15,turtlePatience:Math.max(300,2000-tier*50),
@@ -265,8 +265,8 @@ function updateBotAI(dt){
   if(bot.dashTimer>0)return;
   if(!bot.orbUsed&&bot.orbCooldown<=0){bot.orbUsed=true;orbs.push({x:bot.x,y:bot.y,vx:-(dx/dist)*ORB_SPEED,vy:-(dy/dist)*ORB_SPEED,fromPlayer:false,hue:0,trail:[]});}
   if(!bot.spinUsed&&bot.spinCooldown<=0&&dist<SPIN_RANGE+20){bot.spinUsed=true;bot.spinTimer=SPIN_DUR;bot._spinHit=false;}
-  if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
-  bot.blocking=bot.blockTimer>0;
+  if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0&&(bot.shieldHp||0)>0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
+  bot.blocking=bot.blockTimer>0&&(bot.shieldHp||0)>0;
   const spd=bot.blocking?bs.speed*.3:bs.speed,lowHp=bs.retreatHp>0&&bot.hp<MAX_HP*bs.retreatHp,justHit=bot.iframeTimer>0,canAttack=bot.attackTimer<=0&&!bot.blocking,turtling=player.blockHoldTime>bs.turtlePatience;
   if(lowHp&&dist<bs.aggroDist)botMv(-dx,-dy,dist,spd);
   else if(justHit)botMv(-dx,-dy,dist,spd*1.8);
@@ -355,6 +355,7 @@ socket.on("state",(state)=>{
     localState.players[i].x=lerp(localState.players[i].x,state.players[i].x,0.35);
     localState.players[i].y=lerp(localState.players[i].y,state.players[i].y,0.35);
     localState.players[i].hp=state.players[i].hp;
+    localState.players[i].shieldHp=state.players[i].shieldHp??SHIELD_MAX;
     localState.players[i].blocking=state.players[i].blocking;
     localState.players[i].iframeTimer=state.players[i].iframeTimer;
     localState.players[i].attackPhase=state.players[i].attackPhase;
@@ -499,14 +500,18 @@ function sendOnlineInput(){
   const dt=Math.min(now-lastFrameTime,50);
   lastFrameTime=now;
 
+  const myShieldHp = (localMe?.shieldHp != null) ? localMe.shieldHp : (localState?.players[mySide]?.shieldHp ?? SHIELD_MAX);
+  const shieldBroken = myShieldHp <= 0;
   const inp={
     up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),
     down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),
     left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),
     right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),
-    block:!!onlineKeys["KeyF"],
+    block:!!onlineKeys["KeyF"] && !shieldBroken,
     angle:myAngle
   };
+  // Визуально запрещаем блок если щит сломан
+  if(localMe) localMe.blocking = inp.block;
   socket.emit("input",{roomId,input:inp});
 
   // Только анимации локально — позиция с сервера
@@ -759,67 +764,114 @@ document.addEventListener("keyup",onKeyUp);
   draw();
 })();
 
-// ---- SOUND ENGINE (Web Audio API) ----
+// ---- SOUND ENGINE ----
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
+let masterVolume = parseFloat(localStorage.getItem("cf_volume") ?? "0.7");
+let soundEnabled = localStorage.getItem("cf_sound") !== "0";
+let gameSoundEnabled = localStorage.getItem("cf_gamesound") !== "0";
+
 function getAudio(){ if(!audioCtx) audioCtx=new AudioCtx(); return audioCtx; }
 
+function setVolume(v){
+  masterVolume=v/100;
+  localStorage.setItem("cf_volume", masterVolume);
+  document.getElementById("volume-val").textContent=v+"%";
+}
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  localStorage.setItem("cf_sound", soundEnabled?"1":"0");
+  document.getElementById("sound-btn").textContent=soundEnabled?"Вкл":"Выкл";
+}
+
+function toggleGameSound(){
+  gameSoundEnabled=!gameSoundEnabled;
+  localStorage.setItem("cf_gamesound", gameSoundEnabled?"1":"0");
+  document.getElementById("gamesound-btn").textContent=gameSoundEnabled?"Вкл":"Выкл";
+}
+
 function playSound(type){
+  // Игровые звуки
+  const gameTypes=["hit","block","shieldBreak","dash","orb","spin","win","lose"];
+  if(gameTypes.includes(type) && !gameSoundEnabled) return;
+  // Звуки меню
+  if(type==="click" && !soundEnabled) return;
   try{
     const ac=getAudio();
-    const o=ac.createOscillator();
-    const g=ac.createGain();
-    o.connect(g); g.connect(ac.destination);
     const now=ac.currentTime;
+    const vol=masterVolume;
+
+    function tone(freq, type, dur, gainVal, freqEnd){
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type=type; o.frequency.setValueAtTime(freq,now);
+      if(freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd,now+dur);
+      g.gain.setValueAtTime(gainVal*vol,now);
+      g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+      o.start(now); o.stop(now+dur);
+    }
+    function noise(dur, gainVal){
+      const buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+      const src=ac.createBufferSource(), g=ac.createGain();
+      const filt=ac.createBiquadFilter(); filt.type="bandpass";
+      src.buffer=buf; src.connect(filt); filt.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(gainVal*vol,now);
+      g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+      src.start(now); src.stop(now+dur);
+      return filt;
+    }
+
     if(type==="hit"){
-      o.type="square"; o.frequency.setValueAtTime(180,now); o.frequency.exponentialRampToValueAtTime(80,now+0.1);
-      g.gain.setValueAtTime(0.3,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
-      o.start(now); o.stop(now+0.12);
+      // Удар — короткий удар + шум
+      tone(120,"square",0.08,0.4,60);
+      const n=noise(0.06,0.3); n.frequency.value=800;
     } else if(type==="block"){
-      o.type="triangle"; o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(200,now+0.08);
-      g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.1);
-      o.start(now); o.stop(now+0.1);
+      // Блок — металлический звон
+      tone(600,"triangle",0.15,0.3,400);
+      tone(900,"sine",0.1,0.15,700);
     } else if(type==="shieldBreak"){
-      o.type="sawtooth"; o.frequency.setValueAtTime(300,now); o.frequency.exponentialRampToValueAtTime(50,now+0.4);
-      g.gain.setValueAtTime(0.4,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.4);
-      o.start(now); o.stop(now+0.4);
+      // Поломка щита — треск + падение
+      tone(400,"sawtooth",0.05,0.5);
+      tone(300,"sawtooth",0.1,0.4,80);
+      const n=noise(0.2,0.4); n.frequency.value=2000;
     } else if(type==="dash"){
-      o.type="sine"; o.frequency.setValueAtTime(600,now); o.frequency.exponentialRampToValueAtTime(1200,now+0.15);
-      g.gain.setValueAtTime(0.25,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.18);
-      o.start(now); o.stop(now+0.18);
+      // Дэш — свист
+      tone(300,"sine",0.05,0.2,1200);
+      tone(200,"sine",0.12,0.15,800);
     } else if(type==="orb"){
-      o.type="sine"; o.frequency.setValueAtTime(800,now); o.frequency.exponentialRampToValueAtTime(400,now+0.3);
-      g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.3);
-      o.start(now); o.stop(now+0.3);
+      // Орб — магический звук
+      tone(500,"sine",0.08,0.2,800);
+      tone(700,"sine",0.2,0.15,500);
     } else if(type==="spin"){
-      o.type="sawtooth"; o.frequency.setValueAtTime(200,now); o.frequency.linearRampToValueAtTime(800,now+0.5);
-      g.gain.setValueAtTime(0.3,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.55);
-      o.start(now); o.stop(now+0.55);
+      // Спин — нарастающий вихрь
+      tone(150,"sawtooth",0.08,0.3,600);
+      tone(200,"sine",0.4,0.2,1000);
     } else if(type==="win"){
       [523,659,784,1047].forEach((f,i)=>{
-        const oo=ac.createOscillator(),gg=ac.createGain();
-        oo.connect(gg);gg.connect(ac.destination);
-        oo.type="sine"; oo.frequency.value=f;
-        gg.gain.setValueAtTime(0.3,now+i*0.12); gg.gain.exponentialRampToValueAtTime(0.001,now+i*0.12+0.3);
-        oo.start(now+i*0.12); oo.stop(now+i*0.12+0.3);
+        setTimeout(()=>tone(f,"sine",0.3,0.3),i*120);
       });
     } else if(type==="lose"){
-      [400,300,200,150].forEach((f,i)=>{
-        const oo=ac.createOscillator(),gg=ac.createGain();
-        oo.connect(gg);gg.connect(ac.destination);
-        oo.type="sawtooth"; oo.frequency.value=f;
-        gg.gain.setValueAtTime(0.25,now+i*0.15); gg.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.25);
-        oo.start(now+i*0.15); oo.stop(now+i*0.15+0.25);
+      [400,300,220,150].forEach((f,i)=>{
+        setTimeout(()=>tone(f,"sawtooth",0.25,0.25),i*150);
       });
     } else if(type==="click"){
-      o.type="sine"; o.frequency.setValueAtTime(1000,now);
-      g.gain.setValueAtTime(0.1,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.05);
-      o.start(now); o.stop(now+0.05);
+      tone(1200,"sine",0.04,0.08,900);
     }
   }catch(e){}
 }
 
-// Добавляем звук клика на все кнопки
+// Инициализация настроек звука
+document.addEventListener("DOMContentLoaded",()=>{
+  const vs=document.getElementById("volume-slider");
+  if(vs){ vs.value=Math.round(masterVolume*100); document.getElementById("volume-val").textContent=Math.round(masterVolume*100)+"%"; }
+  const sb=document.getElementById("sound-btn");
+  if(sb) sb.textContent=soundEnabled?"Вкл":"Выкл";
+  const gsb=document.getElementById("gamesound-btn");
+  if(gsb) gsb.textContent=gameSoundEnabled?"Вкл":"Выкл";
+});
+
 document.addEventListener("click", e=>{
   if(e.target.tagName==="BUTTON") playSound("click");
 });
