@@ -5,8 +5,7 @@ const KNOCKBACK=10,IFRAME_TIME=200,PLAYER_SPEED=3.5;
 const DASH_SPEED=28,DASH_DMG=20,DASH_DUR=200;
 const ORB_DMG=15,ORB_SPEED=5.0,ORB_RADIUS=10,ORB_HOMING=0.08;
 const SPIN_DMG=20,SPIN_DUR=600,SPIN_RANGE=(RADIUS+SWORD_LEN+14)*1.5;
-const SHIELD_MAX=5;
-const MAX_RATING=12500,RATING_PER_WIN=15;
+const SHIELD_MAX=5;const MAX_RATING=12500,RATING_PER_WIN=15;
 
 // ---- STORAGE ----
 let ratingBot    = parseInt(localStorage.getItem("cf_rating")        || "0");
@@ -266,8 +265,8 @@ function updateBotAI(dt){
   if(bot.dashTimer>0)return;
   if(!bot.orbUsed&&bot.orbCooldown<=0){bot.orbUsed=true;orbs.push({x:bot.x,y:bot.y,vx:-(dx/dist)*ORB_SPEED,vy:-(dy/dist)*ORB_SPEED,fromPlayer:false,hue:0,trail:[]});}
   if(!bot.spinUsed&&bot.spinCooldown<=0&&dist<SPIN_RANGE+20){bot.spinUsed=true;bot.spinTimer=SPIN_DUR;bot._spinHit=false;}
-  if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
-  bot.blocking=bot.blockTimer>0;
+  if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0&&(bot.shieldHp||0)>0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
+  bot.blocking=bot.blockTimer>0&&(bot.shieldHp||0)>0;
   const spd=bot.blocking?bs.speed*.3:bs.speed,lowHp=bs.retreatHp>0&&bot.hp<MAX_HP*bs.retreatHp,justHit=bot.iframeTimer>0,canAttack=bot.attackTimer<=0&&!bot.blocking,turtling=player.blockHoldTime>bs.turtlePatience;
   if(lowHp&&dist<bs.aggroDist)botMv(-dx,-dy,dist,spd);
   else if(justHit)botMv(-dx,-dy,dist,spd*1.8);
@@ -356,6 +355,7 @@ socket.on("state",(state)=>{
     localState.players[i].x=lerp(localState.players[i].x,state.players[i].x,0.35);
     localState.players[i].y=lerp(localState.players[i].y,state.players[i].y,0.35);
     localState.players[i].hp=state.players[i].hp;
+    localState.players[i].shieldHp=state.players[i].shieldHp??SHIELD_MAX;
     localState.players[i].blocking=state.players[i].blocking;
     localState.players[i].iframeTimer=state.players[i].iframeTimer;
     localState.players[i].attackPhase=state.players[i].attackPhase;
