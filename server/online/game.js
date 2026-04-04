@@ -297,6 +297,11 @@ let myDashUsed=false,myOrbUsed=false,mySpinUsed=false,myAngle=0;
 let searchInterval=null,searchSeconds=0;
 let opponentNickname="Соперник";
 
+// Буфер состояний соперника для интерполяции
+const OPP_BUFFER_DELAY = 120; // мс задержки рендера соперника
+let oppBuffer = []; // [{time, state}]
+let oppRendered = null; // текущее интерполированное состояние соперника
+
 // FPS / Ping
 let showFps=localStorage.getItem("cf_showfps")==="1";
 let fpsFrames=0,fpsLast=performance.now(),currentFps=0,currentPing=0,pingStart=0;
@@ -337,27 +342,25 @@ socket.on("state",(state)=>{
   if(!localMe&&mySide!==null){
     localMe=JSON.parse(JSON.stringify(state.players[mySide]));
   }
-  // Обновляем только соперника из сервера, себя — из localMe
-  const opp=1-mySide;
-  if(mySide!==null&&localState.players[opp]){
-    const lerp=(a,b,t)=>a+(b-a)*t;
-    localState.players[opp].x=lerp(localState.players[opp].x,state.players[opp].x,0.5);
-    localState.players[opp].y=lerp(localState.players[opp].y,state.players[opp].y,0.5);
-    Object.assign(localState.players[opp],{
-      angle:state.players[opp].angle,hp:state.players[opp].hp,
-      blocking:state.players[opp].blocking,attackPhase:state.players[opp].attackPhase,
-      attackAnim:state.players[opp].attackAnim,spinTimer:state.players[opp].spinTimer,
-      iframeTimer:state.players[opp].iframeTimer
+
+  // Добавляем состояние соперника в буфер с временной меткой
+  if(mySide!==null){
+    oppBuffer.push({
+      time: performance.now(),
+      p: JSON.parse(JSON.stringify(state.players[1-mySide]))
     });
+    // Чистим старые записи (старше 1 секунды)
+    const cutoff = performance.now() - 1000;
+    while(oppBuffer.length > 0 && oppBuffer[0].time < cutoff) oppBuffer.shift();
   }
-  localState.orbs=state.orbs;
-  // Синхронизируем localMe с сервером — только важные данные, НЕ позицию
+
+  localState.orbs = state.orbs;
+
+  // Синхронизируем localMe — только HP и события, НЕ позицию
   if(localMe&&mySide!==null){
     const srv=state.players[mySide];
-    // Позицию НЕ трогаем — localMe двигается локально
     localMe.hp=srv.hp;
     localMe.iframeTimer=srv.iframeTimer;
-    // Дэш синхронизируем только если сервер его остановил
     if(srv.dashTimer<=0&&localMe.dashTimer>0) localMe.dashTimer=0;
   }
 });
@@ -400,7 +403,7 @@ function startOnlineGame(){
   onlineCanvas=document.getElementById("online-canvas");
   onlineCanvas.width=CANVAS_W;onlineCanvas.height=CANVAS_H;onlineCtx=onlineCanvas.getContext("2d");
   onlineParticles=[];myDashUsed=false;myOrbUsed=false;mySpinUsed=false;onlineRunning=true;
-  localMe=null; // сбросим, инициализируем при первом state
+  oppBuffer=[];oppRendered=null;localMe=null;
   // Показать FPS оверлей если включён
   const ov=document.getElementById("fps-overlay");
   if(ov)ov.style.display=showFps?"block":"none";
@@ -515,9 +518,9 @@ function sendOnlineInput(){
     if(fv)fv.textContent="FPS: "+currentFps;
   }
 
-  // Рендер — localMe для себя, localState для соперника
+  // Рендер — localMe для себя, интерполированный соперник
   if(localState&&localMe&&mySide!==null){
-    const opp=localState.players[1-mySide];
+    const opp = getInterpolatedOpp() || localState.players[1-mySide];
     renderOnline(localMe, opp, localState.orbs);
   } else if(localState&&mySide!==null){
     renderOnline(localState.players[mySide], localState.players[1-mySide], localState.orbs);
@@ -546,7 +549,26 @@ function updateOnlineParticles(){
   for(let i=onlineParticles.length-1;i>=0;i--){const p=onlineParticles[i];p.x+=p.vx;p.y+=p.vy;p.life-=0.04;if(p.life<=0){onlineParticles.splice(i,1);continue;}onlineCtx.save();onlineCtx.globalAlpha=p.life*.9;onlineCtx.shadowColor=p.color;onlineCtx.shadowBlur=6;onlineCtx.beginPath();onlineCtx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);onlineCtx.fillStyle=p.color;onlineCtx.fill();onlineCtx.restore();}
 }
 
-// ======== SHARED RENDER ========
+function getInterpolatedOpp(){
+  if(oppBuffer.length === 0) return oppRendered;
+  const renderTime = performance.now() - OPP_BUFFER_DELAY;
+  // Найти два соседних состояния для интерполяции
+  let before = null, after = null;
+  for(let i = 0; i < oppBuffer.length; i++){
+    if(oppBuffer[i].time <= renderTime) before = oppBuffer[i];
+    else { after = oppBuffer[i]; break; }
+  }
+  if(!before) return oppBuffer[0].p;
+  if(!after)  return before.p;
+  // Интерполируем между before и after
+  const t = (renderTime - before.time) / (after.time - before.time);
+  const lerp = (a,b,t) => a + (b-a)*t;
+  const r = Object.assign({}, after.p);
+  r.x = lerp(before.p.x, after.p.x, t);
+  r.y = lerp(before.p.y, after.p.y, t);
+  return r;
+}
+
 function renderBot(){
   ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
   updateParticlesDraw(ctx,particles);
