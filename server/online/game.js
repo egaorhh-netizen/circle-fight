@@ -337,39 +337,27 @@ socket.on("matchFound",({roomId:rid,side,opponent})=>{
   setTimeout(startOnlineGame,800);
 });
 socket.on("state",(state)=>{
-  if(!localState) localState=JSON.parse(JSON.stringify(state));
-  // Инициализируем localMe при первом state
-  if(!localMe&&mySide!==null){
-    localMe=JSON.parse(JSON.stringify(state.players[mySide]));
-    localMe.swordId=selectedSwordId;
-  }
+  if(!localState){ localState=state; return; }
 
-  // Добавляем состояние соперника в буфер с временной меткой
-  if(mySide!==null){
-    oppBuffer.push({
-      time: performance.now(),
-      p: JSON.parse(JSON.stringify(state.players[1-mySide]))
-    });
-    // Чистим старые записи (старше 1 секунды)
-    const cutoff = performance.now() - 1000;
-    while(oppBuffer.length > 0 && oppBuffer[0].time < cutoff) oppBuffer.shift();
+  // Плавная интерполяция обоих игроков
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  for(let i=0;i<2;i++){
+    localState.players[i].x=lerp(localState.players[i].x,state.players[i].x,0.35);
+    localState.players[i].y=lerp(localState.players[i].y,state.players[i].y,0.35);
+    localState.players[i].hp=state.players[i].hp;
+    localState.players[i].blocking=state.players[i].blocking;
+    localState.players[i].iframeTimer=state.players[i].iframeTimer;
+    localState.players[i].attackPhase=state.players[i].attackPhase;
+    localState.players[i].attackAnim=state.players[i].attackAnim;
+    localState.players[i].spinTimer=state.players[i].spinTimer;
+    // Угол — только для соперника с сервера, свой — от мыши
+    if(i!==mySide) localState.players[i].angle=state.players[i].angle;
+    localState.players[i].swordId=i===mySide?selectedSwordId:(state.players[i].swordId||"default");
   }
+  localState.orbs=state.orbs;
 
-  localState.orbs = state.orbs;
-
-  // Синхронизируем localMe — позиция с сервера (интерполяция), анимации локальные
-  if(localMe&&mySide!==null){
-    const srv=state.players[mySide];
-    // Всегда мягко тянем к серверу — без резких прыжков
-    localMe.x+=(srv.x-localMe.x)*0.1;
-    localMe.y+=(srv.y-localMe.y)*0.1;
-    localMe.hp=srv.hp;
-    localMe.iframeTimer=srv.iframeTimer;
-    localMe.dashTimer=srv.dashTimer;
-    localMe.dashVx=srv.dashVx;
-    localMe.dashVy=srv.dashVy;
-    localMe.swordId=selectedSwordId;
-  }
+  // localMe = просто ссылка на наш слот в localState
+  localMe=localState.players[mySide];
 });
 socket.on("gameOver",({won})=>{
   onlineRunning=false;stopOnlineGame();lastGameMode="online";
@@ -511,26 +499,14 @@ function sendOnlineInput(){
   };
   socket.emit("input",{roomId,input:inp});
 
-  // Предсказание — двигаем себя локально мгновенно
+  // Только анимации локально — позиция с сервера
   if(localMe){
-    const spd=inp.block?PLAYER_SPEED*0.5:PLAYER_SPEED;
-    if(localMe.dashTimer>0){
-      localMe.dashTimer-=dt;
-      localMe.x=clamp(localMe.x+localMe.dashVx,RADIUS,CANVAS_W-RADIUS);
-      localMe.y=clamp(localMe.y+localMe.dashVy,RADIUS,CANVAS_H-RADIUS);
-    } else {
-      if(inp.up)   localMe.y=clamp(localMe.y-spd,RADIUS,CANVAS_H-RADIUS);
-      if(inp.down) localMe.y=clamp(localMe.y+spd,RADIUS,CANVAS_H-RADIUS);
-      if(inp.left) localMe.x=clamp(localMe.x-spd,RADIUS,CANVAS_W-RADIUS);
-      if(inp.right)localMe.x=clamp(localMe.x+spd,RADIUS,CANVAS_W-RADIUS);
-    }
-    localMe.angle=myAngle;
-    localMe.blocking=inp.block;
-    // Пересчитываем угол если мышь не двигалась (позиция изменилась)
     if(lastMouseX||lastMouseY){
-      myAngle=Math.atan2(lastMouseY-localMe.y, lastMouseX-localMe.x);
+      myAngle=Math.atan2(lastMouseY-localMe.y,lastMouseX-localMe.x);
       localMe.angle=myAngle;
-    }    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
+    }
+    localMe.blocking=inp.block;
+    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
     tickAttackAnim(localMe,dt);
     if(localMe.spinTimer>0){
       localMe.spinTimer-=dt;
