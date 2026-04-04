@@ -77,7 +77,9 @@ function showSettings(){hide("menu");show("settings");}
 function buildInventory() {
   const grid=document.getElementById("sword-grid"); grid.innerHTML="";
   SWORD_SKINS.forEach(sword=>{
-    const unlocked=ratingBot>=sword.unlockRating||ratingOnline>=sword.unlockRating;
+    const unlocked = sword.onlineOnly
+      ? ratingOnline >= sword.unlockRating
+      : ratingBot >= sword.unlockRating || ratingOnline >= sword.unlockRating;
     const selected=sword.id===selectedSwordId;
     const card=document.createElement("div");
     card.className=`sword-card rarity-${sword.rarity}${selected?" selected":""}${!unlocked?" locked":""}`;
@@ -89,7 +91,7 @@ function buildInventory() {
     const rr=document.createElement("div");rr.className="sword-rarity";
     rr.style.color=RARITY_COLOR[sword.rarity]?.startsWith("linear")?"#ff88cc":RARITY_COLOR[sword.rarity];
     rr.textContent=sword.rarity;card.appendChild(rr);
-    if(!unlocked){const lk=document.createElement("div");lk.className="sword-lock";lk.textContent=`🔒 ${sword.unlockRating} MMR`;card.appendChild(lk);}
+    if(!unlocked){const lk=document.createElement("div");lk.className="sword-lock";lk.textContent=`${sword.onlineOnly?"🌐":"🤖"} ${sword.unlockRating} MMR`;card.appendChild(lk);}
     else if(selected){const sl=document.createElement("div");sl.className="sword-lock";sl.textContent="✓ Выбран";card.appendChild(sl);}
     grid.appendChild(card);
   });
