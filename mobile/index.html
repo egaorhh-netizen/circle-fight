@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Circle Fight</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="dark">
+  <span id="nickname-display" onclick="editNickname()" title="Нажмите чтобы изменить">player</span>
+  <input id="nickname-input" type="text" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter')saveNickname()" />
+
+  <!-- MENU -->
+  <div id="menu">
+    <h1 id="title">Circle Fight</h1>
+    <span id="rating-display">Рейтинг: 0 / 12500</span>
+    <button id="btn-play-bot" onclick="startGame()">Играть с ботом</button>
+    <button id="btn-play-online" class="disabled" onclick="showOnlineMsg()">Играть онлайн</button>
+    <span id="online-msg">⚠ Временно не работает</span>
+    <button onclick="showInventory()">Инвентарь</button>
+    <button id="btn-settings" onclick="showSettings()">Настройки</button>
+  </div>
+
+  <!-- INVENTORY -->
+  <div id="inventory" class="hidden">
+    <h2 id="inv-title">Инвентарь</h2>
+    <p id="inv-subtitle">Выбери скин меча</p>
+    <div id="sword-grid"></div>
+    <button id="btn-inv-back" onclick="showMenu()">Назад</button>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings" class="hidden">
+    <h2 id="settings-title">Настройки</h2>
+    <div class="setting-row">
+      <label id="label-lang">Язык:</label>
+      <select id="lang-select" onchange="changeLanguage(this.value)">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label id="label-theme">Тема:</label>
+      <button id="theme-btn" onclick="toggleTheme()">Светлая</button>
+    </div>
+    <button id="btn-back" onclick="showMenu()">Назад</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen" class="hidden">
+    <div id="hud">
+      <div class="hp-block">
+        <span id="player-label">Игрок</span>
+        <div class="hp-bar-bg"><div id="player-hp-bar" class="hp-bar player-color"></div></div>
+        <span id="player-hp-text">100</span>
+      </div>
+      <div class="hp-block">
+        <span id="bot-label">Бот</span>
+        <div class="hp-bar-bg"><div id="bot-hp-bar" class="hp-bar bot-color"></div></div>
+        <span id="bot-hp-text">100</span>
+      </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <!-- TOUCH CONTROLS -->
+    <div id="touch-controls">
+      <!-- Джойстик слева -->
+      <div id="joystick-zone">
+        <div id="joystick-base">
+          <div id="joystick-knob"></div>
+        </div>
+      </div>
+
+      <!-- Кнопки справа -->
+      <div id="action-buttons">
+        <div class="action-row">
+          <button class="touch-btn btn-attack"  id="tb-attack"  ontouchstart="tbDown('attack')"  ontouchend="tbUp('attack')">⚔</button>
+          <button class="touch-btn btn-block"   id="tb-block"   ontouchstart="tbDown('block')"   ontouchend="tbUp('block')">🛡</button>
+        </div>
+        <div class="action-row">
+          <button class="touch-btn btn-dash"    id="tb-dash"    ontouchstart="tbDown('dash')"    ontouchend="tbUp('dash')">Q</button>
+          <button class="touch-btn btn-orb"     id="tb-orb"     ontouchstart="tbDown('orb')"     ontouchend="tbUp('orb')">E</button>
+          <button class="touch-btn btn-spin"    id="tb-spin"    ontouchstart="tbDown('spin')"    ontouchend="tbUp('spin')">R</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skill bar (desktop) -->
+    <div id="skill-bar">
+      <div id="dash-icon" class="skill-icon" title="Дэш [Q]">Q</div>
+      <div id="orb-icon" class="skill-icon orb-skill" title="Орб [E]">E</div>
+      <div id="spin-icon" class="skill-icon spin-skill" title="Спин [R]">R</div>
+    </div>
+
+    <button id="btn-menu" onclick="backToMenu()">В меню</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div id="gameover" class="hidden">
+    <h2 id="gameover-text">Игра окончена</h2>
+    <span id="gameover-rating"></span>
+    <button id="btn-restart" onclick="startGame()">Заново</button>
+    <button id="btn-menu2" onclick="backToMenu()">В меню</button>
+  </div>
+
+  <script src="swords.js"></script>
+  <script src="game.js"></script>
+  <script src="touch.js"></script>
+</body>
+</html>

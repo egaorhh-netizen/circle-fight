@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Circle Fight — Онлайн</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    #lobby { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    #status { font-size:1.1rem; opacity:0.7; }
+    .spinner { width:36px; height:36px; border:4px solid #333; border-top-color:#4af;
+      border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #opponent-info { font-size:0.9rem; opacity:0.6; }
+  </style>
+</head>
+<body class="dark">
+  <span id="nickname-display" onclick="editNickname()" title="Нажмите чтобы изменить">player</span>
+  <input id="nickname-input" type="text" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter')saveNickname()"/>
+
+  <!-- LOBBY -->
+  <div id="lobby">
+    <h1>Circle Fight</h1>
+    <span id="rating-display">Рейтинг: 0</span>
+    <button onclick="findMatch()">Найти игру</button>
+    <button onclick="window.location='../index.html'">← Назад</button>
+    <div id="status"></div>
+    <div id="spinner" class="spinner" style="display:none"></div>
+    <div id="opponent-info"></div>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen" class="hidden">
+    <div id="hud">
+      <div class="hp-block">
+        <span id="player-label">Я</span>
+        <div class="hp-bar-bg"><div id="player-hp-bar" class="hp-bar player-color"></div></div>
+        <span id="player-hp-text">100</span>
+      </div>
+      <div class="hp-block">
+        <span id="bot-label">Соперник</span>
+        <div class="hp-bar-bg"><div id="bot-hp-bar" class="hp-bar bot-color"></div></div>
+        <span id="bot-hp-text">100</span>
+      </div>
+    </div>
+    <span id="shield-hint">Щит [F] | Дэш [Q] | Орб [E] | Спин [R]</span>
+    <canvas id="canvas"></canvas>
+    <div id="skill-bar">
+      <div id="dash-icon"  class="skill-icon">Q</div>
+      <div id="orb-icon"   class="skill-icon orb-skill">E</div>
+      <div id="spin-icon"  class="skill-icon spin-skill">R</div>
+    </div>
+    <button onclick="leaveGame()">Выйти</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div id="gameover" class="hidden">
+    <h2 id="gameover-text"></h2>
+    <span id="gameover-rating"></span>
+    <button onclick="findMatch()">Снова</button>
+    <button onclick="window.location='../index.html'">В меню</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="swords.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Circle Fight — Онлайн</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    #search-bar {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(0,180,80,0.15);
+      border-bottom: 2px solid #0f0;
+      padding: 8px 20px;
+      align-items: center; justify-content: center; gap: 16px;
+      z-index: 200;
+      font-size: 0.95rem;
+    }
+    #search-bar.visible { display: flex; }
+    #search-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #0f0;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    #search-timer { color: #0f0; font-weight: 700; }
+    #search-label { color: #0f0; }
+  </style>
+</head>
+<body class="dark">
+  <!-- Ник -->
+  <span id="nickname-display" onclick="editNickname()" title="Нажмите чтобы изменить">player</span>
+  <input id="nickname-input" type="text" maxlength="20"
+    onblur="saveNickname()"
+    onkeydown="if(event.key==='Enter')saveNickname()"/>
+
+  <!-- Поиск игры (сверху) -->
+  <div id="search-bar">
+    <div id="search-dot"></div>
+    <span id="search-label">Поиск игры</span>
+    <span id="search-timer">0:00</span>
+    <button onclick="cancelSearch()" style="padding:4px 12px;font-size:0.8rem">Отмена</button>
+  </div>
+
+  <!-- ЛОББИ -->
+  <div id="menu">
+    <h1 id="title">Circle Fight</h1>
+    <span id="rating-display">Рейтинг: 0</span>
+    <button onclick="findMatch()">Играть онлайн</button>
+    <button onclick="window.location='../index.html'">← В меню</button>
+    <button onclick="showInventory()">Инвентарь</button>
+    <span id="online-msg" style="color:#e74c3c;font-weight:bold;display:none"></span>
+    <span id="opponent-found" style="color:#0f0;display:none"></span>
+  </div>
+
+  <!-- ИНВЕНТАРЬ -->
+  <div id="inventory" class="hidden">
+    <h2>Инвентарь</h2>
+    <p style="opacity:0.5;font-size:0.9rem">Выбери скин меча</p>
+    <div id="sword-grid"></div>
+    <button onclick="showMenu()">Назад</button>
+  </div>
+
+  <!-- ИГРА -->
+  <div id="game-screen" class="hidden">
+    <div id="hud">
+      <div class="hp-block">
+        <span id="player-label">Я</span>
+        <div class="hp-bar-bg"><div id="player-hp-bar" class="hp-bar player-color"></div></div>
+        <span id="player-hp-text">100</span>
+      </div>
+      <div class="hp-block">
+        <span id="bot-label">Соперник</span>
+        <div class="hp-bar-bg"><div id="bot-hp-bar" class="hp-bar bot-color"></div></div>
+        <span id="bot-hp-text">100</span>
+      </div>
+    </div>
+    <span id="shield-hint">Щит [F] | Дэш [Q] | Орб [E] | Спин [R]</span>
+    <canvas id="canvas"></canvas>
+    <div id="skill-bar">
+      <div id="dash-icon"  class="skill-icon">Q</div>
+      <div id="orb-icon"   class="skill-icon orb-skill">E</div>
+      <div id="spin-icon"  class="skill-icon spin-skill">R</div>
+    </div>
+    <button id="btn-menu" onclick="leaveGame()">Выйти</button>
+  </div>
+
+  <!-- КОНЕЦ ИГРЫ -->
+  <div id="gameover" class="hidden">
+    <h2 id="gameover-text"></h2>
+    <span id="gameover-rating"></span>
+    <button onclick="findMatch()">Снова</button>
+    <button onclick="window.location='../index.html'">В меню</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="swords.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
