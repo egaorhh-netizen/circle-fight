@@ -101,7 +101,7 @@ function buildInventory() {
 let canvas,ctx,animId,lastTime=0,keys={},player,bot,gameRunning=false,particles=[],orbs=[];
 
 function botStats(){
-  const tier=Math.min(Math.floor(ratingBot/100), 15); // макс тир 15 = 1500 ммр
+  const tier=Math.min(Math.floor(ratingBot/100), 7); // макс тир 7 = 700 ммр
   const tc=Math.min(tier,5),ag=tier>=3;
   return{speed:2+tc,attackCd:Math.max(300,1000-tier*30),reactionTime:Math.max(50,600-tier*20),
     blockChance:Math.min(0.95,0.1+tier*0.05),blockDuration:Math.min(2000,200+tier*80),
@@ -500,12 +500,13 @@ function sendOnlineInput(){
   const dt=Math.min(now-lastFrameTime,50);
   lastFrameTime=now;
 
+  const myShieldHp = localMe ? (localMe.shieldHp ?? SHIELD_MAX) : SHIELD_MAX;
   const inp={
     up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),
     down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),
     left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),
     right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),
-    block:!!onlineKeys["KeyF"],
+    block:!!onlineKeys["KeyF"] && myShieldHp > 0,  // нельзя блокировать со сломанным щитом
     angle:myAngle
   };
   socket.emit("input",{roomId,input:inp});
