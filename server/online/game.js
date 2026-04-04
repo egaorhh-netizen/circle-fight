@@ -383,6 +383,7 @@ const socket=io();
 let roomId=null,mySide=null,onlineRunning=false,onlineCanvas,onlineCtx;
 let localState=null,onlineParticles=[];
 let myDashUsed=false,myOrbUsed=false,mySpinUsed=false,myAngle=0;
+let myIronShieldUsed=false,myIronShieldTimer=0;
 let searchInterval=null,searchSeconds=0;
 let opponentNickname="Соперник";
 
@@ -487,7 +488,7 @@ function startOnlineGame(){
   hide("menu");hide("gameover");show("online-screen");
   onlineCanvas=document.getElementById("online-canvas");
   onlineCanvas.width=CANVAS_W;onlineCanvas.height=CANVAS_H;onlineCtx=onlineCanvas.getContext("2d");
-  onlineParticles=[];myDashUsed=false;myOrbUsed=false;mySpinUsed=false;onlineRunning=true;
+  onlineParticles=[];myDashUsed=false;myOrbUsed=false;mySpinUsed=false;myIronShieldUsed=false;myIronShieldTimer=0;onlineRunning=true;
   oppBuffer=[];oppRendered=null;localMe=null;
   // Показать FPS оверлей если включён
   const ov=document.getElementById("fps-overlay");
@@ -515,11 +516,12 @@ function stopOnlineGame(){
 let onlineKeys={};
 function onOnlineKeyDown(e){
   onlineKeys[e.code]=true;
-  if(["KeyW","KeyA","KeyS","KeyD","KeyF","KeyQ","KeyE","KeyR"].includes(e.code))e.preventDefault();
+  if(["KeyW","KeyA","KeyS","KeyD","KeyF","KeyQ","KeyE","KeyR","KeyZ"].includes(e.code))e.preventDefault();
   if(!onlineRunning)return;
   if(e.code==="KeyQ")doOnlineAction("dash");
   if(e.code==="KeyE")doOnlineAction("orb");
   if(e.code==="KeyR")doOnlineAction("spin");
+  if(e.code==="KeyZ")doOnlineAction("ironshield");
 }
 function onOnlineKeyUp(e){onlineKeys[e.code]=false;}
 let lastMouseX=0, lastMouseY=0;
@@ -548,7 +550,14 @@ function doOnlineAction(type){
   if(type==="dash"&&myDashUsed)return;
   if(type==="orb"&&myOrbUsed)return;
   if(type==="spin"&&mySpinUsed)return;
-  // Нельзя атаковать в блоке
+  if(type==="ironshield"){
+    if(!hasSkill("ironshield")||myIronShieldUsed||myIronShieldTimer>0)return;
+    myIronShieldUsed=true;myIronShieldTimer=3000;
+    if(localMe){localMe.ironShieldTimer=3000;}
+    spawnIronShieldStart(localMe?.x||CANVAS_W/2,localMe?.y||CANVAS_H/2);
+    socket.emit("action",{roomId,action:{type:"ironshield"}});
+    updateOnlineSkillBar();return;
+  }
   if(type==="attack"&&localMe?.blocking)return;
   if(type==="dash"){
     myDashUsed=true;
@@ -569,6 +578,12 @@ function updateOnlineSkillBar(){
   document.getElementById("online-dash-icon")?.classList.toggle("used",myDashUsed);
   document.getElementById("online-orb-icon")?.classList.toggle("used",myOrbUsed);
   document.getElementById("online-spin-icon")?.classList.toggle("used",mySpinUsed);
+  const ii=document.getElementById("online-ironshield-icon");
+  if(ii){
+    if(hasSkill("ironshield"))ii.classList.remove("hidden");
+    ii.classList.toggle("used",myIronShieldUsed&&myIronShieldTimer<=0);
+    ii.classList.toggle("active-shield",myIronShieldTimer>0);
+  }
 }
 
 let lastFrameTime=performance.now();
@@ -605,6 +620,12 @@ function sendOnlineInput(){
     if(localMe.spinTimer>0){
       localMe.spinTimer-=dt;
       if(localMe.spinTimer<=0){localMe.spinTimer=0;localMe._spinHit=false;}
+    }
+    if(myIronShieldTimer>0){
+      myIronShieldTimer-=dt;
+      localMe.ironShieldTimer=myIronShieldTimer;
+      if(myIronShieldTimer<=0){myIronShieldTimer=0;localMe.ironShieldTimer=0;spawnIronShieldEnd(localMe.x,localMe.y);}
+      updateOnlineSkillBar();
     }
   }
 
