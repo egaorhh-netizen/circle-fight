@@ -106,15 +106,19 @@
         <span id="online-player-label">Я</span>
         <div class="hp-bar-bg"><div id="online-player-hp-bar" class="hp-bar player-color"></div></div>
         <span id="online-player-hp-text">100</span>
+        <div class="shield-bar-bg"><div id="online-player-shield-bar" class="shield-bar"></div></div>
+        <span id="online-player-shield-icon">🛡</span>
       </div>
       <div class="hud-player">
         <span id="online-bot-label">Соперник</span>
         <div class="hp-bar-bg"><div id="online-bot-hp-bar" class="hp-bar bot-color"></div></div>
         <span id="online-bot-hp-text">100</span>
+        <div class="shield-bar-bg"><div id="online-bot-shield-bar" class="shield-bar bot-shield"></div></div>
+        <span id="online-bot-shield-icon">🛡</span>
       </div>
     </div>
     <canvas id="online-canvas"></canvas>
-    <div id="fps-overlay" style="display:none;position:absolute;bottom:8px;left:8px;font-size:.75rem;opacity:.7;font-family:monospace;pointer-events:none;color:#0f0;">
+    <div id="fps-overlay" style="display:none;position:absolute;bottom:52px;left:8px;font-size:.75rem;opacity:.7;font-family:monospace;pointer-events:none;color:#0f0;">
       <span id="fps-val">FPS: --</span> | <span id="ping-val">Пинг: --ms</span>
     </div>
     <div id="skill-bar">
@@ -122,7 +126,7 @@
       <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
       <div id="online-spin-icon" class="skill-icon spin-skill">R</div>
     </div>
-    <button onclick="leaveOnlineGame()">В меню</button>
+    <button id="btn-menu" onclick="leaveOnlineGame()">В меню</button>
   </div>
 
   <!-- КОНЕЦ ИГРЫ -->

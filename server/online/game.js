@@ -546,6 +546,11 @@ function renderOnline(me, opp, orbs){
   document.getElementById("online-bot-hp-bar").style.width=(Math.max(0,opp.hp)/MAX_HP*100)+"%";
   document.getElementById("online-player-hp-text").textContent=Math.round(Math.max(0,me.hp));
   document.getElementById("online-bot-hp-text").textContent=Math.round(Math.max(0,opp.hp));
+  // Щит онлайн
+  const psb=document.getElementById("online-player-shield-bar");
+  const bsb=document.getElementById("online-bot-shield-bar");
+  if(psb){const sh=me.shieldHp!=null?me.shieldHp:SHIELD_MAX;psb.style.width=(sh/SHIELD_MAX*100)+"%";psb.classList.toggle("broken",sh<=0);}
+  if(bsb){const sh=opp.shieldHp!=null?opp.shieldHp:SHIELD_MAX;bsb.style.width=(sh/SHIELD_MAX*100)+"%";bsb.classList.toggle("broken",sh<=0);}
   updateOnlineParticles();
   (orbs||[]).forEach(o=>{
     const hue=o.owner===mySide?200:0;onlineCtx.save();onlineCtx.shadowColor=`hsl(${hue+20},100%,65%)`;onlineCtx.shadowBlur=20;

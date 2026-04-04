@@ -291,3 +291,13 @@ body.light .shield-bar-bg { background: rgba(0,0,0,0.1); }
   pointer-events: none;
 }
 #menu h1 { position: relative; }
+
+#online-screen {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; height: 100vh;
+}
+#online-canvas {
+  border-radius: 12px; display: block;
+}
+body.dark  #online-canvas { background: #1a1a2e; border: 2px solid #333; }
+body.light #online-canvas { background: #e8e8f0; border: 2px solid #ccc; }
