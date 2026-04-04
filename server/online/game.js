@@ -453,9 +453,12 @@ function onOnlineKeyDown(e){
 }
 function onOnlineKeyUp(e){onlineKeys[e.code]=false;}
 function onOnlineMouseMove(e){
-  if(!onlineCanvas||!localState)return;
-  const r=onlineCanvas.getBoundingClientRect(),me=localState.players[mySide];
-  myAngle=Math.atan2(e.clientY-r.top-me.y,e.clientX-r.left-me.x);
+  if(!onlineCanvas)return;
+  const r=onlineCanvas.getBoundingClientRect();
+  const ref=localMe||localState?.players[mySide];
+  if(!ref)return;
+  myAngle=Math.atan2(e.clientY-r.top-ref.y,e.clientX-r.left-ref.x);
+  if(localMe)localMe.angle=myAngle;
   socket.emit("action",{roomId,action:{type:"angle",angle:myAngle}});
 }
 function onOnlineMouseDown(e){if(e.button===0)doOnlineAction("attack");}
