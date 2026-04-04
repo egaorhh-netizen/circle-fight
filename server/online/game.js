@@ -445,23 +445,49 @@ function onOnlineMouseDown(e){if(e.button===0)doOnlineAction("attack");}
 function doOnlineAction(type){
   if(!onlineRunning)return;
   if(type==="dash"&&myDashUsed)return;if(type==="orb"&&myOrbUsed)return;if(type==="spin"&&mySpinUsed)return;
-  if(type==="dash")myDashUsed=true;if(type==="orb")myOrbUsed=true;if(type==="spin")mySpinUsed=true;
+  if(type==="dash"){
+    myDashUsed=true;
+    if(localMe){localMe.dashTimer=DASH_DUR;localMe.dashVx=Math.cos(myAngle)*DASH_SPEED;localMe.dashVy=Math.sin(myAngle)*DASH_SPEED;}
+  }
+  if(type==="orb")  myOrbUsed=true;
+  if(type==="spin"){
+    mySpinUsed=true;
+    if(localMe){localMe.spinTimer=SPIN_DUR;localMe._spinHit=false;}
+  }
+  if(type==="attack"&&localMe){
+    localMe.attackPhase="windup";localMe.attackPhaseTimer=100;localMe.attackAnim=1;
+  }
   socket.emit("action",{roomId,action:{type}});updateOnlineSkillBar();
 }
 function updateOnlineSkillBar(){
   document.getElementById("online-dash-icon")?.classList.toggle("used",myDashUsed);
   document.getElementById("online-orb-icon")?.classList.toggle("used",myOrbUsed);
   document.getElementById("online-spin-icon")?.classList.toggle("used",mySpinUsed);
-}function sendOnlineInput(){
+}
+
+let lastFrameTime=performance.now();
+
+function sendOnlineInput(){
   if(!onlineRunning)return;
-  const inp={up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),block:!!onlineKeys["KeyF"],angle:myAngle};
+  const now=performance.now();
+  const dt=Math.min(now-lastFrameTime,50);
+  lastFrameTime=now;
+
+  const inp={
+    up:!!(onlineKeys["KeyW"]||onlineKeys["ArrowUp"]),
+    down:!!(onlineKeys["KeyS"]||onlineKeys["ArrowDown"]),
+    left:!!(onlineKeys["KeyA"]||onlineKeys["ArrowLeft"]),
+    right:!!(onlineKeys["KeyD"]||onlineKeys["ArrowRight"]),
+    block:!!onlineKeys["KeyF"],
+    angle:myAngle
+  };
   socket.emit("input",{roomId,input:inp});
 
-  // Клиент-сайд предсказание — двигаем себя локально без ожидания сервера
+  // Клиент-сайд предсказание
   if(localMe){
     const spd=inp.block?PLAYER_SPEED*0.5:PLAYER_SPEED;
     if(localMe.dashTimer>0){
-      localMe.dashTimer-=16;
+      localMe.dashTimer-=dt;
       localMe.x=clamp(localMe.x+localMe.dashVx,RADIUS,CANVAS_W-RADIUS);
       localMe.y=clamp(localMe.y+localMe.dashVy,RADIUS,CANVAS_H-RADIUS);
     } else {
@@ -472,27 +498,40 @@ function updateOnlineSkillBar(){
     }
     localMe.angle=myAngle;
     localMe.blocking=inp.block;
+    if(localMe.iframeTimer>0)localMe.iframeTimer-=dt;
+    // Тикаем анимацию атаки локально
+    tickAttackAnim(localMe,dt);
+    // Тикаем спин локально
+    if(localMe.spinTimer>0){
+      localMe.spinTimer-=dt;
+      if(localMe.spinTimer<=0){localMe.spinTimer=0;localMe._spinHit=false;}
+    }
   }
 
-  // FPS счётчик
+  // FPS
   fpsFrames++;
-  const now=performance.now();
   if(now-fpsLast>=1000){
     currentFps=fpsFrames;fpsFrames=0;fpsLast=now;
     const fv=document.getElementById("fps-val");
     if(fv)fv.textContent="FPS: "+currentFps;
   }
 
-  if(localState){
-    // Рендерим с предсказанной позицией себя
-    const renderState=JSON.parse(JSON.stringify(localState));
-    if(localMe&&mySide!==null){
-      renderState.players[mySide].x=localMe.x;
-      renderState.players[mySide].y=localMe.y;
-      renderState.players[mySide].angle=localMe.angle;
-      renderState.players[mySide].blocking=localMe.blocking;
-    }
-    renderOnline(renderState);
+  // Рендер — используем localMe для себя, localState для соперника
+  if(localState&&localMe&&mySide!==null){
+    // Временно подменяем позицию себя на предсказанную
+    const saved={x:localState.players[mySide].x,y:localState.players[mySide].y,
+      angle:localState.players[mySide].angle,blocking:localState.players[mySide].blocking,
+      attackPhase:localState.players[mySide].attackPhase,attackAnim:localState.players[mySide].attackAnim,
+      spinTimer:localState.players[mySide].spinTimer,iframeTimer:localState.players[mySide].iframeTimer};
+    Object.assign(localState.players[mySide],{
+      x:localMe.x,y:localMe.y,angle:localMe.angle,blocking:localMe.blocking,
+      attackPhase:localMe.attackPhase,attackAnim:localMe.attackAnim,
+      spinTimer:localMe.spinTimer,iframeTimer:localMe.iframeTimer
+    });
+    renderOnline(localState);
+    Object.assign(localState.players[mySide],saved);
+  } else if(localState){
+    renderOnline(localState);
   }
 
   requestAnimationFrame(sendOnlineInput);
