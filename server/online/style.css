@@ -338,7 +338,7 @@ body.light #online-canvas { background: #e8e8f0; border: 2px solid #ccc; }
 /* ---- SHOP ---- */
 #shop {
   display: flex; flex-direction: column; align-items: center; gap: 16px;
-  width: 100%; max-width: 600px; padding: 20px;
+  width: 100%; max-width: 900px; padding: 20px;
 }
 #shop h2 { font-size: 2rem; }
 
@@ -373,8 +373,10 @@ body.light #online-canvas { background: #e8e8f0; border: 2px solid #ccc; }
 
 #shop-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px; width: 100%;
+  gap: 16px; width: 100%; max-width: 860px;
 }
+
+.shop-card-sword canvas { border-radius: 8px; display: block; width: 140px; height: 60px; }
 
 .shop-card {
   border-radius: 14px; padding: 18px 14px;

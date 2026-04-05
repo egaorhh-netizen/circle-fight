@@ -437,6 +437,99 @@ const SWORD_SKINS = [
       if(particles){for(let i=0;i<3;i++) particles.push({x:R+Math.random()*SL,y:(Math.random()-.5)*8,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:1,color:`hsl(${Math.random()*30},100%,55%)`,size:Math.random()*5+2,type:"fire"});}
     }
   },
+  // ---- МАГАЗИННЫЕ СКИНЫ (за орбы) ----
+  {
+    id: "aurora",
+    name: "Аврора",
+    rarity: "shop",
+    unlockRating: 0,
+    shopOnly: true,
+    shopPrice: 800,
+    draw(ctx, R, SL, phase, anim, isPlayer, particles) {
+      const t = Date.now()/600;
+      ctx.save();
+      const grad = ctx.createLinearGradient(R,0,R+SL+12,0);
+      grad.addColorStop(0,   `hsl(${160+Math.sin(t)*30},90%,45%)`);
+      grad.addColorStop(0.4, `hsl(${200+Math.cos(t)*40},100%,65%)`);
+      grad.addColorStop(0.7, `hsl(${260+Math.sin(t+1)*30},90%,70%)`);
+      grad.addColorStop(1,   `hsl(${300+Math.cos(t+2)*20},80%,80%)`);
+      ctx.shadowColor = `hsl(${200+Math.sin(t)*60},100%,60%)`; ctx.shadowBlur = 28;
+      ctx.beginPath();
+      ctx.moveTo(R,-4); ctx.lineTo(R+SL,-2.5); ctx.lineTo(R+SL+12,0);
+      ctx.lineTo(R+SL,2.5); ctx.lineTo(R,4); ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill(); ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(R,0);
+      for(let i=0;i<=SL+12;i+=4) ctx.lineTo(R+i, Math.sin(t*3+i*0.2)*2.5);
+      ctx.stroke(); ctx.restore();
+      ctx.beginPath(); ctx.roundRect(R-5,-12,10,24,3);
+      ctx.fillStyle=`hsl(${180+Math.sin(t)*40},70%,25%)`; ctx.fill();
+      ctx.strokeStyle="rgba(150,255,220,0.7)"; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(R-9,-3,9,6,2); ctx.fillStyle="#0a1a15"; ctx.fill();
+      if(particles) for(let i=0;i<2;i++) particles.push({x:R+Math.random()*SL,y:(Math.random()-.5)*8,vx:(Math.random()-.5)*1.5,vy:-Math.random()*2,life:1,color:`hsl(${160+Math.random()*140},100%,70%)`,size:Math.random()*4+1,type:"plasma"});
+    }
+  },
+  {
+    id: "crystal",
+    name: "Кристалл",
+    rarity: "shop",
+    unlockRating: 0,
+    shopOnly: true,
+    shopPrice: 1200,
+    draw(ctx, R, SL, phase, anim, isPlayer, particles) {
+      const t = Date.now()/400;
+      ctx.save();
+      ctx.shadowColor = "rgba(180,240,255,0.9)"; ctx.shadowBlur = 35;
+      const grad = ctx.createLinearGradient(R,-4,R+SL+12,4);
+      grad.addColorStop(0,"rgba(200,240,255,0.95)"); grad.addColorStop(0.3,"rgba(140,210,255,0.8)");
+      grad.addColorStop(0.6,"rgba(220,250,255,0.95)"); grad.addColorStop(1,"rgba(255,255,255,1)");
+      ctx.beginPath();
+      ctx.moveTo(R,-5); ctx.lineTo(R+SL*0.2,-3); ctx.lineTo(R+SL*0.5,-4);
+      ctx.lineTo(R+SL,-2); ctx.lineTo(R+SL+12,0);
+      ctx.lineTo(R+SL,2); ctx.lineTo(R+SL*0.5,4); ctx.lineTo(R+SL*0.2,3); ctx.lineTo(R,5); ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill(); ctx.restore();
+      ctx.save(); ctx.strokeStyle="rgba(100,200,255,0.6)"; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(R+SL*0.2,-3); ctx.lineTo(R+SL*0.2,3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(R+SL*0.5,-4); ctx.lineTo(R+SL*0.5,4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(R+SL*0.75,-3); ctx.lineTo(R+SL*0.75,3); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.globalAlpha=0.4+Math.sin(t)*0.2;
+      ctx.strokeStyle="rgba(255,255,255,0.9)"; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(R+SL*0.1,-3); ctx.lineTo(R+SL*0.6,-1); ctx.stroke(); ctx.restore();
+      ctx.beginPath(); ctx.roundRect(R-5,-13,10,26,3);
+      ctx.fillStyle="rgba(180,230,255,0.9)"; ctx.fill(); ctx.strokeStyle="rgba(100,200,255,0.8)"; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(R-9,-3,9,6,2); ctx.fillStyle="rgba(140,200,240,0.8)"; ctx.fill();
+      if(particles&&Math.random()<0.3){const a=Math.random()*Math.PI*2;particles.push({x:R+Math.random()*SL,y:(Math.random()-.5)*6,vx:Math.cos(a)*1.5,vy:Math.sin(a)*1.5,life:1,color:"rgba(200,240,255,0.95)",size:Math.random()*3+1,type:"ice"});}
+    }
+  },
+  {
+    id: "inferno",
+    name: "Инферно",
+    rarity: "shop",
+    unlockRating: 0,
+    shopOnly: true,
+    shopPrice: 1500,
+    draw(ctx, R, SL, phase, anim, isPlayer, particles) {
+      const t = Date.now()/200;
+      ctx.save(); ctx.shadowColor="#ff4400"; ctx.shadowBlur=45;
+      const grad=ctx.createLinearGradient(R,0,R+SL+14,0);
+      grad.addColorStop(0,"#1a0000"); grad.addColorStop(0.2,"#8b0000");
+      grad.addColorStop(0.5,"#ff2200"); grad.addColorStop(0.8,"#ff8800"); grad.addColorStop(1,"#ffee00");
+      ctx.beginPath();
+      ctx.moveTo(R,-5); ctx.lineTo(R+SL,-3); ctx.lineTo(R+SL+14,0);
+      ctx.lineTo(R+SL,3); ctx.lineTo(R,5); ctx.closePath();
+      ctx.fillStyle=grad; ctx.fill(); ctx.restore();
+      ctx.save(); ctx.fillStyle=`rgba(255,${100+Math.sin(t)*50},0,0.7)`;
+      for(let i=0;i<6;i++){const px=R+SL*0.1+i*(SL*0.15),h=3+Math.sin(t+i*1.3)*2;ctx.beginPath();ctx.moveTo(px-3,0);ctx.lineTo(px,-h-3);ctx.lineTo(px+3,0);ctx.closePath();ctx.fill();}
+      ctx.restore();
+      ctx.save(); ctx.shadowColor="#ffee00"; ctx.shadowBlur=15;
+      ctx.strokeStyle=`rgba(255,${180+Math.sin(t*2)*60},0,0.8)`; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(R,0); ctx.lineTo(R+SL+14,0); ctx.stroke(); ctx.restore();
+      ctx.beginPath(); ctx.roundRect(R-5,-14,10,28,3); ctx.fillStyle="#1a0000"; ctx.fill(); ctx.strokeStyle="#ff4400"; ctx.lineWidth=2; ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(R-9,-3,9,6,2); ctx.fillStyle="#0d0000"; ctx.fill();
+      if(particles) for(let i=0;i<3;i++) particles.push({x:R+Math.random()*SL,y:(Math.random()-.5)*6,vx:(Math.random()-.5)*2,vy:-Math.random()*3-1,life:1,color:`hsl(${Math.random()*40},100%,${50+Math.random()*30}%)`,size:Math.random()*5+2,type:"fire"});
+    }
+  },
 ];
 
 const RARITY_COLOR = {
@@ -445,6 +538,7 @@ const RARITY_COLOR = {
   epic:      "#aa44ff",
   legendary: "#ffaa00",
   mythic:    "linear-gradient(135deg,#ff44aa,#aa44ff,#44aaff)",
+  shop:      "linear-gradient(135deg,#00ddaa,#00aaff,#aa44ff)",
 };
 
 let selectedSwordId = localStorage.getItem("cf_sword") || "default";

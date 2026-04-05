@@ -88,8 +88,20 @@ function showShop(){
   hide("menu"); show("shop");
   document.getElementById("shop-orbs-count").textContent = orbs_currency;
   const btn = document.getElementById("buy-ironshield");
-  if(hasSkill("ironshield")){ btn.textContent="✓ Куплено"; btn.classList.add("owned"); btn.disabled=true; }
+  if(hasSkill("ironshield")){ btn.textContent="Куплено"; btn.classList.add("owned"); btn.disabled=true; }
   else { btn.textContent="Купить"; btn.classList.remove("owned"); btn.disabled=false; }
+  ["aurora","crystal","inferno"].forEach(id => {
+    const b = document.getElementById("buy-"+id);
+    if(!b) return;
+    if(hasSkill("sword_"+id)){ b.textContent="Куплено"; b.classList.add("owned"); b.disabled=true; }
+    else { b.textContent="Купить"; b.classList.remove("owned"); b.disabled=false; }
+    const cv = document.getElementById("preview-"+id);
+    if(cv){
+      const cx = cv.getContext("2d"); cx.clearRect(0,0,140,60);
+      const sword = SWORD_SKINS.find(s=>s.id===id);
+      if(sword){ cx.save(); cx.translate(20,30); sword.draw(cx,10,80,null,0,true,null); cx.restore(); }
+    }
+  });
 }
 
 function buySkill(id, price){
@@ -100,7 +112,19 @@ function buySkill(id, price){
   saveOrbs(); saveSkills();
   document.getElementById("shop-orbs-count").textContent = orbs_currency;
   const btn = document.getElementById("buy-"+id);
-  btn.textContent="✓ Куплено"; btn.classList.add("owned"); btn.disabled=true;
+  if(btn){ btn.textContent="Куплено"; btn.classList.add("owned"); btn.disabled=true; }
+}
+
+function buySword(id, price){
+  const key = "sword_"+id;
+  if(hasSkill(key)) return;
+  if(orbs_currency < price){ shakeCost(); return; }
+  orbs_currency -= price;
+  ownedSkills.push(key);
+  saveOrbs(); saveSkills();
+  document.getElementById("shop-orbs-count").textContent = orbs_currency;
+  const btn = document.getElementById("buy-"+id);
+  if(btn){ btn.textContent="Куплено"; btn.classList.add("owned"); btn.disabled=true; }
 }
 
 function shakeCost(){
@@ -113,9 +137,14 @@ function shakeCost(){
 function buildInventory() {
   const grid=document.getElementById("sword-grid"); grid.innerHTML="";
   SWORD_SKINS.forEach(sword=>{
-    const unlocked = sword.onlineOnly
-      ? ratingOnline >= sword.unlockRating
-      : ratingBot >= sword.unlockRating || ratingOnline >= sword.unlockRating;
+    let unlocked;
+    if(sword.shopOnly) {
+      unlocked = hasSkill("sword_"+sword.id);
+    } else {
+      unlocked = sword.onlineOnly
+        ? ratingOnline >= sword.unlockRating
+        : ratingBot >= sword.unlockRating || ratingOnline >= sword.unlockRating;
+    }
     const selected=sword.id===selectedSwordId;
     const card=document.createElement("div");
     card.className=`sword-card rarity-${sword.rarity}${selected?" selected":""}${!unlocked?" locked":""}`;
@@ -127,7 +156,11 @@ function buildInventory() {
     const rr=document.createElement("div");rr.className="sword-rarity";
     rr.style.color=RARITY_COLOR[sword.rarity]?.startsWith("linear")?"#ff88cc":RARITY_COLOR[sword.rarity];
     rr.textContent=sword.rarity;card.appendChild(rr);
-    if(!unlocked){const lk=document.createElement("div");lk.className="sword-lock";lk.textContent=`${sword.onlineOnly?"🌐":"🤖"} ${sword.unlockRating} MMR`;card.appendChild(lk);}
+    if(!unlocked){
+      const lk=document.createElement("div");lk.className="sword-lock";
+      lk.textContent=sword.shopOnly?"Магазин":(`${sword.onlineOnly?"":"Bot "} ${sword.unlockRating} MMR`);
+      card.appendChild(lk);
+    }
     else if(selected){const sl=document.createElement("div");sl.className="sword-lock";sl.textContent="✓ Выбран";card.appendChild(sl);}
     grid.appendChild(card);
   });

@@ -92,11 +92,32 @@
         <div class="shop-card-icon">🛡</div>
         <div class="shop-card-name">Iron Shield</div>
         <div class="shop-card-desc">На 3 сек отражает весь урон обратно. Клавиша Z. Один раз за игру.</div>
-        <div class="shop-card-price">
-          <div class="orb-mini"></div>
-          500
-        </div>
+        <div class="shop-card-price"><div class="orb-mini"></div>500</div>
         <button class="shop-buy-btn" id="buy-ironshield" onclick="buySkill('ironshield',500)">Купить</button>
+      </div>
+      <!-- Аврора -->
+      <div class="shop-card shop-card-sword">
+        <canvas id="preview-aurora" width="140" height="60"></canvas>
+        <div class="shop-card-name">Аврора</div>
+        <div class="shop-card-desc">Переливается всеми цветами радуги с волнистым эффектом.</div>
+        <div class="shop-card-price"><div class="orb-mini"></div>800</div>
+        <button class="shop-buy-btn" id="buy-aurora" onclick="buySword('aurora',800)">Купить</button>
+      </div>
+      <!-- Кристалл -->
+      <div class="shop-card shop-card-sword">
+        <canvas id="preview-crystal" width="140" height="60"></canvas>
+        <div class="shop-card-name">Кристалл</div>
+        <div class="shop-card-desc">Многогранный кристалл с бликами и ледяными частицами.</div>
+        <div class="shop-card-price"><div class="orb-mini"></div>1200</div>
+        <button class="shop-buy-btn" id="buy-crystal" onclick="buySword('crystal',1200)">Купить</button>
+      </div>
+      <!-- Инферно -->
+      <div class="shop-card shop-card-sword">
+        <canvas id="preview-inferno" width="140" height="60"></canvas>
+        <div class="shop-card-name">Инферно</div>
+        <div class="shop-card-desc">Раскалённый клинок с зубцами пламени и огненными частицами.</div>
+        <div class="shop-card-price"><div class="orb-mini"></div>1500</div>
+        <button class="shop-buy-btn" id="buy-inferno" onclick="buySword('inferno',1500)">Купить</button>
       </div>
     </div>
     <button onclick="showMenu()">Назад</button>
