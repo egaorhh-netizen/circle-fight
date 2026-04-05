@@ -79,30 +79,28 @@ function hide(id){document.getElementById(id)?.classList.add("hidden");}
 function transitionTo(hideIds, showId, callback){
   const current = hideIds.map(id => document.getElementById(id)).find(el => el && !el.classList.contains("hidden"));
   const next = document.getElementById(showId);
-  if(!next) return;
-  if(current){
-    current.classList.add("fade-out");
-    setTimeout(()=>{
-      hideIds.forEach(id => document.getElementById(id)?.classList.add("hidden"));
-      current.classList.remove("fade-out");
-      next.classList.remove("hidden");
-      next.classList.add("fade-in");
-      setTimeout(()=> next.classList.remove("fade-in"), 300);
-      if(callback) callback();
-    }, 220);
-  } else {
+  if(!next) { if(callback) callback(); return; }
+  const doShow = () => {
+    hideIds.forEach(id => { const el=document.getElementById(id); if(el) el.classList.add("hidden"); });
     next.classList.remove("hidden");
     next.classList.add("fade-in");
     setTimeout(()=> next.classList.remove("fade-in"), 300);
     if(callback) callback();
+  };
+  if(current && current.id !== showId){
+    current.classList.add("fade-out");
+    setTimeout(()=>{ current.classList.remove("fade-out"); doShow(); }, 200);
+  } else {
+    doShow();
   }
 }
 
 const ALL_SCREENS = ["menu","inventory","settings","game-screen","online-screen","gameover","shop"];
 
 function showMenu() {
+  stopBotGame();
   transitionTo(ALL_SCREENS, "menu", ()=>{
-    stopBotGame(); updateRatingDisplay();
+    updateRatingDisplay();
     document.getElementById("search-bar").classList.remove("visible");
   });
 }
@@ -892,7 +890,7 @@ document.addEventListener("keyup",onKeyUp);
   // Тёмная тема — синие частицы с линиями
   const darkPts=[];
   for(let i=0;i<70;i++) darkPts.push({
-    x:Math.random()*3000,y:Math.random()*2000,
+    x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
     vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5,
     r:Math.random()*2+.5, hue:190+Math.random()*40, alpha:Math.random()*.6+.15
   });
@@ -900,14 +898,14 @@ document.addEventListener("keyup",onKeyUp);
   // Светлая тема — летящие кольца и искры
   const lightRings=[];
   for(let i=0;i<8;i++) lightRings.push({
-    x:Math.random()*3000,y:Math.random()*2000,
+    x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
     r:Math.random()*60+20, maxR:Math.random()*120+60,
     speed:Math.random()*.4+.2, alpha:Math.random()*.4+.1,
     hue:20+Math.random()*40
   });
   const lightPts=[];
   for(let i=0;i<50;i++) lightPts.push({
-    x:Math.random()*3000,y:Math.random()*2000,
+    x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
     vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,
     r:Math.random()*3+1, hue:20+Math.random()*40, alpha:Math.random()*.5+.1
   });
