@@ -266,9 +266,8 @@ function updateBotHUD(){
     sii.classList.toggle("used", !!player.silenceUsed);
   }
   const botSilenced = bot && bot.silenceTimer>0;
-  ["dash-icon","orb-icon","spin-icon"].forEach(id=>{
-    document.getElementById(id)?.classList.toggle("silenced", !!botSilenced);
-  });
+  // В боте-режиме иконки игрока не трогаем — бот не имеет своих иконок
+  // silenced применяется только в онлайне через updateOnlineSkillBar
 }
 
 function updateBot(dt){
@@ -669,6 +668,11 @@ function updateOnlineSkillBar(){
     if(hasSkill("silence"))sii.classList.remove("hidden");
     sii.classList.toggle("used",mySilenceUsed);
   }
+  // Серые иконки у соперника если он под silence
+  const oppSilenced = localState && mySide!==null && (localState.players[1-mySide]?.silenceTimer||0)>0;
+  ["online-dash-icon","online-orb-icon","online-spin-icon"].forEach(id=>{
+    document.getElementById(id)?.classList.toggle("silenced", !!oppSilenced);
+  });
 }
 
 let lastFrameTime=performance.now();
