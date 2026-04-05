@@ -167,7 +167,8 @@ function startBotGame(){
     attackAnim:0,attackPhase:null,attackPhaseTimer:0,blocking:false,blockTimer:0,reactionTimer:0,
     stateTimer:0,dashUsed:false,dashTimer:0,dashVx:0,dashVy:0,
     dashCooldown:3000+Math.random()*4000,orbUsed:false,orbCooldown:5000+Math.random()*5000,
-    spinUsed:false,spinTimer:0,spinAngle:0,spinCooldown:4000+Math.random()*4000,sword:bsw,stats:bs,shieldHp:SHIELD_MAX};
+    spinUsed:false,spinTimer:0,spinAngle:0,spinCooldown:4000+Math.random()*4000,sword:bsw,stats:bs,shieldHp:SHIELD_MAX,
+    ironShieldUsed:false,ironShieldTimer:0,ironShieldCooldown:6000+Math.random()*4000};
   particles=[];orbs=[];gameRunning=true;
   updateBotHUD();
   canvas.addEventListener("mousedown",onMouseDown);
@@ -238,11 +239,17 @@ function updateBot(dt){
     player.y=clamp(player.y+player.dashVy,RADIUS,CANVAS_H-RADIUS);
     const dd=Math.hypot(bot.x-player.x,bot.y-player.y);
     if(dd<RADIUS*2.2&&bot.iframeTimer<=0){
-      bot.hp=Math.max(0,bot.hp-DASH_DMG);bot.iframeTimer=IFRAME_TIME*2;
-      const nx=(bot.x-player.x)/dd,ny=(bot.y-player.y)/dd;
-      bot.x=clamp(bot.x+nx*20,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+ny*20,RADIUS,CANVAS_H-RADIUS);
-      player.dashTimer=0;spawnParticles(player.x,player.y,"rgba(80,160,255,0.9)");
-      updateBotHUD();if(bot.hp<=0){endBotGame(true);return;}
+      if(bot.ironShieldTimer>0){
+        player.hp=Math.max(0,player.hp-DASH_DMG);player.iframeTimer=IFRAME_TIME*2;
+        spawnIronShieldReflect(bot.x,bot.y);
+        player.dashTimer=0;updateBotHUD();if(player.hp<=0){endBotGame(false);return;}
+      } else {
+        bot.hp=Math.max(0,bot.hp-DASH_DMG);bot.iframeTimer=IFRAME_TIME*2;
+        const nx=(bot.x-player.x)/dd,ny=(bot.y-player.y)/dd;
+        bot.x=clamp(bot.x+nx*20,RADIUS,CANVAS_W-RADIUS);bot.y=clamp(bot.y+ny*20,RADIUS,CANVAS_H-RADIUS);
+        player.dashTimer=0;spawnParticles(player.x,player.y,"rgba(80,160,255,0.9)");
+        updateBotHUD();if(bot.hp<=0){endBotGame(true);return;}
+      }
     }
     if(Math.random()<0.6)particles.push({x:player.x+(Math.random()-.5)*10,y:player.y+(Math.random()-.5)*10,vx:-player.dashVx*.2+(Math.random()-.5),vy:-player.dashVy*.2+(Math.random()-.5),life:1,color:"rgba(100,180,255,0.8)",size:Math.random()*5+2,type:"spark"});
   }else{
@@ -278,6 +285,8 @@ function updateBot(dt){
   if(bot.attackTimer>0)bot.attackTimer-=dt;if(bot.iframeTimer>0)bot.iframeTimer-=dt;
   if(bot.blockTimer>0)bot.blockTimer-=dt;if(bot.reactionTimer>0)bot.reactionTimer-=dt;
   if(bot.dashCooldown>0)bot.dashCooldown-=dt;if(bot.orbCooldown>0)bot.orbCooldown-=dt;if(bot.spinCooldown>0)bot.spinCooldown-=dt;
+  if(bot.ironShieldCooldown>0)bot.ironShieldCooldown-=dt;
+  if(bot.ironShieldTimer>0){bot.ironShieldTimer-=dt;if(bot.ironShieldTimer<=0){bot.ironShieldTimer=0;spawnIronShieldEnd(bot.x,bot.y);}}
   // Iron Shield тик
   if(player.ironShieldTimer>0){
     player.ironShieldTimer-=dt;
@@ -310,12 +319,15 @@ function updateOrbsBot(dt){
     if(o.x<0||o.x>CANVAS_W||o.y<0||o.y>CANVAS_H){orbs.splice(i,1);continue;}
     const hitDist=Math.hypot(target.x-o.x,target.y-o.y);
     if(hitDist<RADIUS+ORB_RADIUS&&target.iframeTimer<=0&&!target.blocking){
-      // Iron Shield для игрока
-      if(!o.fromPlayer && player.ironShieldTimer>0){
+      // Iron Shield отражение
+      if(o.fromPlayer&&bot.ironShieldTimer>0){
+        player.hp=Math.max(0,player.hp-ORB_DMG);player.iframeTimer=IFRAME_TIME;
+        spawnIronShieldReflect(bot.x,bot.y);
+        orbs.splice(i,1);updateBotHUD();if(player.hp<=0){endBotGame(false);return;}
+      } else if(!o.fromPlayer&&player.ironShieldTimer>0){
         bot.hp=Math.max(0,bot.hp-ORB_DMG);bot.iframeTimer=IFRAME_TIME;
         spawnIronShieldReflect(player.x,player.y);
-        orbs.splice(i,1);updateBotHUD();
-        if(bot.hp<=0){endBotGame(true);return;}
+        orbs.splice(i,1);updateBotHUD();if(bot.hp<=0){endBotGame(true);return;}
       } else {
         target.hp=Math.max(0,target.hp-ORB_DMG);target.iframeTimer=IFRAME_TIME;
         spawnParticles(o.x,o.y,o.fromPlayer?"rgba(80,160,255,0.9)":"rgba(255,80,80,0.9)");
@@ -337,6 +349,15 @@ function updateBotAI(dt){
   if(bot.dashTimer>0)return;
   if(!bot.orbUsed&&bot.orbCooldown<=0){bot.orbUsed=true;orbs.push({x:bot.x,y:bot.y,vx:-(dx/dist)*ORB_SPEED,vy:-(dy/dist)*ORB_SPEED,fromPlayer:false,hue:0,trail:[]});}
   if(!bot.spinUsed&&bot.spinCooldown<=0&&dist<SPIN_RANGE+20){bot.spinUsed=true;bot.spinTimer=SPIN_DUR;bot._spinHit=false;}
+  // Iron Shield — только после 300 ммр, один раз, когда HP < 40% или игрок атакует вплотную
+  if(ratingBot>=300&&!bot.ironShieldUsed&&bot.ironShieldCooldown<=0&&bot.ironShieldTimer<=0){
+    const lowHpTrigger=bot.hp<MAX_HP*0.4;
+    const playerAttacking=player.attackPhase==="swing"&&dist<ATTACK_RANGE*1.2;
+    if(lowHpTrigger||playerAttacking){
+      bot.ironShieldUsed=true;bot.ironShieldTimer=3000;
+      spawnIronShieldStart(bot.x,bot.y);
+    }
+  }
   if(player.attackPhase==="swing"&&bot.blockTimer<=0&&bot.reactionTimer<=0&&(bot.shieldHp||0)>0){if(Math.random()<bs.blockChance)bot.blockTimer=bs.blockDuration;bot.reactionTimer=bs.reactionTime;}
   bot.blocking=bot.blockTimer>0&&(bot.shieldHp||0)>0;
   const spd=bot.blocking?bs.speed*.3:bs.speed,lowHp=bs.retreatHp>0&&bot.hp<MAX_HP*bs.retreatHp,justHit=bot.iframeTimer>0,canAttack=bot.attackTimer<=0&&!bot.blocking,turtling=player.blockHoldTime>bs.turtlePatience;
