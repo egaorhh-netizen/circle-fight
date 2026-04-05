@@ -75,21 +75,48 @@ function toggleTheme(){
 function show(id){document.getElementById(id)?.classList.remove("hidden");}
 function hide(id){document.getElementById(id)?.classList.add("hidden");}
 
-function showMenu() {
-  ["inventory","settings","game-screen","online-screen","gameover","shop"].forEach(hide);
-  show("menu"); stopBotGame(); updateRatingDisplay();
-  document.getElementById("search-bar").classList.remove("visible");
+// ---- ПЛАВНЫЕ ПЕРЕХОДЫ ----
+function transitionTo(hideIds, showId, callback){
+  const current = hideIds.map(id => document.getElementById(id)).find(el => el && !el.classList.contains("hidden"));
+  const next = document.getElementById(showId);
+  if(!next) return;
+  if(current){
+    current.classList.add("fade-out");
+    setTimeout(()=>{
+      hideIds.forEach(id => document.getElementById(id)?.classList.add("hidden"));
+      current.classList.remove("fade-out");
+      next.classList.remove("hidden");
+      next.classList.add("fade-in");
+      setTimeout(()=> next.classList.remove("fade-in"), 300);
+      if(callback) callback();
+    }, 220);
+  } else {
+    next.classList.remove("hidden");
+    next.classList.add("fade-in");
+    setTimeout(()=> next.classList.remove("fade-in"), 300);
+    if(callback) callback();
+  }
 }
-function showInventory(){hide("menu");show("inventory");buildInventory();}
-function showSettings(){hide("menu");show("settings");}
+
+const ALL_SCREENS = ["menu","inventory","settings","game-screen","online-screen","gameover","shop"];
+
+function showMenu() {
+  transitionTo(ALL_SCREENS, "menu", ()=>{
+    stopBotGame(); updateRatingDisplay();
+    document.getElementById("search-bar").classList.remove("visible");
+  });
+}
+function showInventory(){ transitionTo(ALL_SCREENS,"inventory",buildInventory); }
+function showSettings(){ transitionTo(ALL_SCREENS,"settings"); }
 
 // ---- SHOP ----
 function showShop(){
-  hide("menu"); show("shop");
-  document.getElementById("shop-orbs-count").textContent = orbs_currency;
-  const btn = document.getElementById("buy-ironshield");
-  if(hasSkill("ironshield")){ btn.textContent="✓ Куплено"; btn.classList.add("owned"); btn.disabled=true; }
-  else { btn.textContent="Купить"; btn.classList.remove("owned"); btn.disabled=false; }
+  transitionTo(ALL_SCREENS,"shop",()=>{
+    document.getElementById("shop-orbs-count").textContent = orbs_currency;
+    const btn = document.getElementById("buy-ironshield");
+    if(hasSkill("ironshield")){ btn.textContent="Куплено"; btn.classList.add("owned"); btn.disabled=true; }
+    else { btn.textContent="Купить"; btn.classList.remove("owned"); btn.disabled=false; }
+  });
 }
 
 function buySkill(id, price){
@@ -155,7 +182,7 @@ function pickBotSword(){
 }
 
 function startBotGame(){
-  hide("menu");show("game-screen");
+  transitionTo(ALL_SCREENS,"game-screen",()=>{
   canvas=document.getElementById("canvas");
   canvas.width=CANVAS_W;canvas.height=CANVAS_H;ctx=canvas.getContext("2d");
   const bs=botStats(),bsw=pickBotSword();
@@ -175,7 +202,7 @@ function startBotGame(){
   canvas.addEventListener("mousemove",onMouseMove);
   if(animId)cancelAnimationFrame(animId);
   lastTime=performance.now();animId=requestAnimationFrame(botLoop);
-}
+  });
 
 function stopBotGame(){
   gameRunning=false;if(animId){cancelAnimationFrame(animId);animId=null;}
@@ -964,9 +991,9 @@ function toggleGameSound(){
 }
 
 function playSound(type){
-  // Игровые звуки
+  // Игровые звуки — только в онлайне
   const gameTypes=["hit","block","shieldBreak","dash","orb","spin","win","lose"];
-  if(gameTypes.includes(type) && !gameSoundEnabled) return;
+  if(gameTypes.includes(type)) return; // убраны звуки из игры с ботом
   // Звуки меню
   if(type==="click" && !soundEnabled) return;
   try{
