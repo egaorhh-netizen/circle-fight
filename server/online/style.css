@@ -221,17 +221,17 @@ body.dark #menu h1 span {
   100% { background-position: 0% 50%; }
 }
 
-/* Светлая тема — тёмно-синий */
+/* Светлая тема — оранжевый с тёмно-оранжевым */
 body.light #menu h1 {
   font-size: 3.8rem; font-weight: 900; letter-spacing: 4px;
   line-height: 1.1; text-align: center;
-  background: linear-gradient(135deg, #1a3d99 0%, #2255cc 40%, #0d2877 70%, #1a3d99 100%);
+  background: linear-gradient(135deg, #e06000 0%, #ff7700 40%, #aa3d00 70%, #e06000 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   animation: goldShift 3s ease-in-out infinite;
 }
 body.light #menu h1 span {
-  background: linear-gradient(135deg, #0d2877 0%, #1a3d99 50%, #091d66 100%);
+  background: linear-gradient(135deg, #aa3d00 0%, #cc5500 50%, #882e00 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   animation: goldShift 3s ease-in-out infinite reverse;
