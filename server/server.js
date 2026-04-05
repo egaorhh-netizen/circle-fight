@@ -152,6 +152,7 @@ function makePlayer(x, y, angle, data) {
     spinUsed: false, spinTimer: 0,
     shieldHp: 5,
     ironShieldUsed: false, ironShieldTimer: 0,
+    silenceTimer: 0,
     nickname: data?.nickname || "player",
     swordId: data?.swordId || "default",
     rating: data?.rating || 0,
@@ -189,13 +190,16 @@ function processAction(state, idx, action) {
     if (p.ironShieldUsed || p.ironShieldTimer > 0) return;
     p.ironShieldUsed = true;
     p.ironShieldTimer = 3000;
+  } else if (action.type === "silence") {
+    if (opp.silenceTimer > 0) return;
+    opp.silenceTimer = 3000;
   } else if (action.type === "dash") {
-    if (p.dashUsed || p.dashTimer > 0 || p.blocking) return;
+    if (p.dashUsed || p.dashTimer > 0 || p.blocking || p.silenceTimer > 0) return;
     p.dashUsed = true; p.dashTimer = DASH_DUR;
     p.dashVx = Math.cos(p.angle) * DASH_SPEED;
     p.dashVy = Math.sin(p.angle) * DASH_SPEED;
   } else if (action.type === "orb") {
-    if (p.orbUsed) return;
+    if (p.orbUsed || p.silenceTimer > 0) return;
     p.orbUsed = true;
     const dx = opp.x - p.x, dy = opp.y - p.y;
     const dist = Math.hypot(dx, dy) || 1;
@@ -205,7 +209,7 @@ function processAction(state, idx, action) {
       owner: idx, trail: [],
     });
   } else if (action.type === "spin") {
-    if (p.spinUsed || p.spinTimer > 0 || p.blocking) return;
+    if (p.spinUsed || p.spinTimer > 0 || p.blocking || p.silenceTimer > 0) return;
     p.spinUsed = true; p.spinTimer = SPIN_DUR;
   } else if (action.type === "angle") {
     p.angle = action.angle;
@@ -259,6 +263,7 @@ function tickState(state) {
     if (p.attackTimer  > 0) p.attackTimer  -= dt;
     if (p.iframeTimer  > 0) p.iframeTimer  -= dt;
     if (p.ironShieldTimer > 0) { p.ironShieldTimer -= dt; if (p.ironShieldTimer < 0) p.ironShieldTimer = 0; }
+    if (p.silenceTimer   > 0) { p.silenceTimer   -= dt; if (p.silenceTimer   < 0) p.silenceTimer   = 0; }
 
     // Attack animation tick
     if (p.attackPhase) {

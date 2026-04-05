@@ -87,6 +87,14 @@
     </div>
     <h2 id="shop-title">Магазин</h2>
     <div id="shop-grid">
+      <!-- Sphere of Silence -->
+      <div class="shop-card" id="shop-card-silence">
+        <div class="shop-card-icon" style="font-size:2rem;color:#aaa">X</div>
+        <div class="shop-card-name">Sphere of Silence</div>
+        <div class="shop-card-desc">Блокирует скиллы противника на 3 сек. Клавиша X. Один раз за игру.</div>
+        <div class="shop-card-price"><div class="orb-mini"></div>2000</div>
+        <button class="shop-buy-btn" id="buy-silence" onclick="buySkill('silence',2000)">Купить</button>
+      </div>
       <!-- Iron Shield -->
       <div class="shop-card" id="shop-card-ironshield">
         <div class="shop-card-icon">🛡</div>
@@ -147,6 +155,7 @@
       <div id="orb-icon" class="skill-icon orb-skill">E</div>
       <div id="spin-icon" class="skill-icon spin-skill">R</div>
       <div id="ironshield-icon" class="skill-icon iron-skill hidden">Z</div>
+      <div id="silence-icon" class="skill-icon silence-skill hidden">X</div>
     </div>
     <button id="btn-menu" onclick="showMenu()">В меню</button>
   </div>
@@ -178,6 +187,7 @@
       <div id="online-orb-icon" class="skill-icon orb-skill">E</div>
       <div id="online-spin-icon" class="skill-icon spin-skill">R</div>
       <div id="online-ironshield-icon" class="skill-icon iron-skill hidden">Z</div>
+      <div id="online-silence-icon" class="skill-icon silence-skill hidden">X</div>
     </div>
     <button id="btn-menu" onclick="leaveOnlineGame()">В меню</button>
   </div>

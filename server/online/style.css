@@ -432,3 +432,21 @@ body.light .iron-skill { background: rgba(100,100,100,0.08) !important; }
   60%{transform:translateX(-4px)}
   80%{transform:translateX(4px)}
 }
+
+.silence-skill { border-color: rgba(180,100,255,0.5) !important; color: rgba(180,100,255,0.8) !important; }
+body.dark  .silence-skill { background: rgba(120,0,200,0.08) !important; }
+body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
+.silence-skill.active-silence {
+  border-color: rgba(200,120,255,0.9) !important; color: #fff !important;
+  animation: silencePulse 0.4s ease-in-out infinite alternate;
+}
+@keyframes silencePulse {
+  from { box-shadow: 0 0 8px rgba(180,100,255,0.4); }
+  to   { box-shadow: 0 0 20px rgba(200,120,255,0.8); }
+}
+/* Silenced — скиллы противника серые */
+.skill-icon.silenced {
+  opacity: 0.2 !important; filter: grayscale(1) !important;
+  border-color: #444 !important; color: #444 !important;
+  pointer-events: none;
+}
