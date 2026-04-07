@@ -160,23 +160,31 @@
 
     <!-- TOUCH CONTROLS (мобильные) -->
     <div id="touch-controls">
+      <!-- Джойстик движения (слева) -->
       <div id="joystick-zone">
         <div id="joystick-base"><div id="joystick-knob"></div></div>
       </div>
+
+      <!-- Кнопки атаки (по центру) -->
       <div id="action-buttons">
         <div class="action-row">
           <button class="touch-btn btn-attack" ontouchstart="tbDown('attack')" ontouchend="tbUp('attack')">⚔</button>
           <button class="touch-btn btn-block"  ontouchstart="tbDown('block')"  ontouchend="tbUp('block')">F</button>
         </div>
         <div class="action-row">
-          <button class="touch-btn btn-dash"  id="tb-dash"  ontouchstart="tbDown('dash')"  ontouchend="tbUp('dash')">Q</button>
-          <button class="touch-btn btn-orb"   id="tb-orb"   ontouchstart="tbDown('orb')"   ontouchend="tbUp('orb')">E</button>
-          <button class="touch-btn btn-spin"  id="tb-spin"  ontouchstart="tbDown('spin')"  ontouchend="tbUp('spin')">R</button>
+          <button class="touch-btn btn-dash"  ontouchstart="tbDown('dash')"  ontouchend="tbUp('dash')">Q</button>
+          <button class="touch-btn btn-orb"   ontouchstart="tbDown('orb')"   ontouchend="tbUp('orb')">E</button>
+          <button class="touch-btn btn-spin"  ontouchstart="tbDown('spin')"  ontouchend="tbUp('spin')">R</button>
         </div>
         <div class="action-row" id="tb-extra-row" style="display:none">
-          <button class="touch-btn btn-iron"    id="tb-iron"    ontouchstart="tbDown('ironshield')" ontouchend="tbUp('ironshield')">Z</button>
-          <button class="touch-btn btn-silence" id="tb-silence" ontouchstart="tbDown('silence')"    ontouchend="tbUp('silence')">X</button>
+          <button class="touch-btn btn-iron"    ontouchstart="tbDown('ironshield')" ontouchend="tbUp('ironshield')">Z</button>
+          <button class="touch-btn btn-silence" ontouchstart="tbDown('silence')"    ontouchend="tbUp('silence')">X</button>
         </div>
+      </div>
+
+      <!-- Джойстик прицела (справа) -->
+      <div id="aim-zone">
+        <div id="aim-base"><div id="aim-knob"></div></div>
       </div>
     </div>
 

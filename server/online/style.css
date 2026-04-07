@@ -461,17 +461,17 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
   z-index: 50;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 0 12px 16px;
+  padding: 0 8px 12px;
 }
 
-#joystick-zone {
+#joystick-zone, #aim-zone {
   width: 150px; height: 150px;
   position: relative;
   pointer-events: all;
   flex-shrink: 0;
 }
 
-#joystick-base {
+#joystick-base, #aim-base {
   width: 86px; height: 86px;
   border-radius: 50%;
   background: rgba(255,255,255,0.07);
@@ -483,7 +483,7 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
   transition: opacity 0.2s;
 }
 
-#joystick-knob {
+#joystick-knob, #aim-knob {
   width: 38px; height: 38px;
   border-radius: 50%;
   background: rgba(255,255,255,0.45);
@@ -492,6 +492,9 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
 }
+
+#aim-base { border-color: rgba(255,150,50,0.4); background: rgba(255,120,0,0.07); }
+#aim-knob { background: rgba(255,150,50,0.5); border-color: rgba(255,180,80,0.8); }
 
 #action-buttons {
   display: flex;
@@ -529,7 +532,12 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
 /* Мобильная адаптация */
 /* Мобильная адаптация */
 @media (max-width: 900px) {
-  body { overflow: hidden; height: 100dvh; width: 100vw; }
+  body {
+    display: block !important;
+    overflow: hidden;
+    height: 100dvh; width: 100vw;
+    position: fixed; top: 0; left: 0;
+  }
 
   #game-screen {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -538,7 +546,6 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
     overflow: hidden; padding: 0;
   }
 
-  /* Canvas масштабируется через CSS, логика остаётся 760x480 */
   #canvas, #online-canvas {
     width: 100vw !important;
     height: auto !important;
@@ -549,13 +556,21 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
     display: block;
   }
 
+  /* Меню — скроллируемые, занимают весь экран */
+  #menu, #settings, #gameover, #inventory, #shop {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    display: flex !important; flex-direction: column; align-items: center;
+    justify-content: flex-start; padding: 40px 16px 20px;
+    width: 100%; max-width: 100%;
+  }
+
   #hud { padding: 4px 8px; width: 100%; flex-shrink: 0; }
   .hp-bar-bg { height: 12px; }
   #skill-bar { display: none !important; }
   #shield-hint { display: none !important; }
   #btn-menu { position: fixed; top: 6px; left: 8px; padding: 5px 12px; font-size: 0.78rem; z-index: 60; }
 
-  #menu, #settings, #gameover, #inventory, #shop { padding: 16px; width: 100%; max-width: 100%; }
   #sword-grid { grid-template-columns: repeat(2, 1fr); }
   #shop-grid  { grid-template-columns: repeat(2, 1fr); }
   button { width: 100%; max-width: 320px; }
