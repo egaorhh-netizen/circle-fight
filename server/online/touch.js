@@ -128,11 +128,16 @@ function init() {
         const d = Math.hypot(dx, dy);
         if (d > JOY_R) { dx=dx/d*JOY_R; dy=dy/d*JOY_R; }
         setKnob(aimKnob, dx, dy);
-        // Угол = направление от центра джойстика
         if (d > 5) {
           const angle = Math.atan2(dy, dx);
-          if (window.player)  window.player.angle  = angle;
-          if (window.localMe) { window.localMe.angle = angle; window.myAngle = angle; }
+          // Бот-режим
+          if (window.player) window.player.angle = angle;
+          // Онлайн-режим
+          if (window.localMe) window.localMe.angle = angle;
+          // Отправляем угол на сервер в онлайне
+          if (window.onlineRunning && typeof doOnlineAction === "function") {
+            doOnlineAction_angle(angle);
+          }
         }
       }
     }, { passive: false });

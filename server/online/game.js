@@ -629,6 +629,14 @@ function updateOnlineAngle(){
   localMe.angle=myAngle;
 }
 function onOnlineMouseDown(e){if(e.button===0)doOnlineAction("attack");}
+
+// Отправка угла с мобильного джойстика
+function doOnlineAction_angle(angle){
+  if(!onlineRunning)return;
+  myAngle=angle;
+  if(localMe)localMe.angle=angle;
+  socket.emit("action",{roomId,action:{type:"angle",angle}});
+}
 function doOnlineAction(type){
   if(!onlineRunning)return;
   if(type==="dash"&&myDashUsed)return;
