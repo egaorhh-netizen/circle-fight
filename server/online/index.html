@@ -160,31 +160,25 @@
 
     <!-- TOUCH CONTROLS (мобильные) -->
     <div id="touch-controls">
-      <!-- Джойстик движения (слева) -->
+      <!-- Левый джойстик — движение -->
       <div id="joystick-zone">
         <div id="joystick-base"><div id="joystick-knob"></div></div>
       </div>
 
-      <!-- Кнопки атаки (по центру) -->
-      <div id="action-buttons">
-        <div class="action-row">
-          <button class="touch-btn btn-attack" ontouchstart="tbDown('attack')" ontouchend="tbUp('attack')">⚔</button>
-          <button class="touch-btn btn-block"  ontouchstart="tbDown('block')"  ontouchend="tbUp('block')">F</button>
-        </div>
-        <div class="action-row">
-          <button class="touch-btn btn-dash"  ontouchstart="tbDown('dash')"  ontouchend="tbUp('dash')">Q</button>
-          <button class="touch-btn btn-orb"   ontouchstart="tbDown('orb')"   ontouchend="tbUp('orb')">E</button>
-          <button class="touch-btn btn-spin"  ontouchstart="tbDown('spin')"  ontouchend="tbUp('spin')">R</button>
-        </div>
-        <div class="action-row" id="tb-extra-row" style="display:none">
-          <button class="touch-btn btn-iron"    ontouchstart="tbDown('ironshield')" ontouchend="tbUp('ironshield')">Z</button>
-          <button class="touch-btn btn-silence" ontouchstart="tbDown('silence')"    ontouchend="tbUp('silence')">X</button>
-        </div>
+      <!-- Скиллы по центру снизу -->
+      <div id="skill-btns">
+        <button class="touch-btn btn-dash"  ontouchstart="tbDown('dash')"  ontouchend="tbUp('dash')">Q</button>
+        <button class="touch-btn btn-orb"   ontouchstart="tbDown('orb')"   ontouchend="tbUp('orb')">E</button>
+        <button class="touch-btn btn-spin"  ontouchstart="tbDown('spin')"  ontouchend="tbUp('spin')">R</button>
       </div>
 
-      <!-- Джойстик прицела (справа) -->
-      <div id="aim-zone">
-        <div id="aim-base"><div id="aim-knob"></div></div>
+      <!-- Правая зона — джойстик прицела + атака + блок -->
+      <div id="right-zone">
+        <div id="aim-zone">
+          <div id="aim-base"><div id="aim-knob"></div></div>
+        </div>
+        <button class="touch-btn btn-attack" ontouchstart="tbDown('attack')" ontouchend="tbUp('attack')">⚔</button>
+        <button class="touch-btn btn-block"  ontouchstart="tbDown('block')"  ontouchend="tbUp('block')">F</button>
       </div>
     </div>
 
