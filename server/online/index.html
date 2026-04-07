@@ -4,6 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Circle Fight</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#0e0e16"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Circle Fight"/>
+  <link rel="apple-touch-icon" href="/icon-192.png"/>
   <link rel="stylesheet" href="style.css"/>
   <style>
     #search-bar{display:none;position:fixed;top:0;left:0;right:0;background:rgba(0,180,80,0.15);border-bottom:2px solid #0f0;padding:8px 20px;align-items:center;justify-content:center;gap:16px;z-index:200;font-size:.95rem;}
@@ -203,5 +210,10 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="swords.js"></script>
   <script src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 </body>
 </html>

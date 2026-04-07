@@ -11,6 +11,8 @@ const MIME = {
   ".html": "text/html",
   ".js":   "application/javascript",
   ".css":  "text/css",
+  ".json": "application/json",
+  ".png":  "image/png",
 };
 
 const httpServer = http.createServer((req, res) => {
