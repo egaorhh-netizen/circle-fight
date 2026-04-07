@@ -115,7 +115,10 @@ function init() {
       aimJoyOrigin = { x: t.clientX - r.left, y: t.clientY - r.top };
       if (aimBase) { aimBase.style.left=aimJoyOrigin.x+"px"; aimBase.style.top=aimJoyOrigin.y+"px"; aimBase.style.opacity="1"; }
       setKnob(aimKnob, 0, 0);
-      applyAimAngle(t.clientX, t.clientY);
+      // Дебаг
+      let dbg = document.getElementById("aim-debug");
+      if (!dbg) { dbg=document.createElement("div"); dbg.id="aim-debug"; dbg.style.cssText="position:fixed;top:50px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#ff0;padding:4px 10px;border-radius:8px;font-size:12px;z-index:999;pointer-events:none"; document.body.appendChild(dbg); }
+      dbg.textContent = `aim START id:${aimJoyId} zone:${r.width.toFixed(0)}x${r.height.toFixed(0)}`;
     }, { passive: false });
 
     aimZone.addEventListener("touchmove", e => {
@@ -130,12 +133,15 @@ function init() {
         setKnob(aimKnob, dx, dy);
         if (d > 5) {
           const angle = Math.atan2(dy, dx);
+          // Показываем угол на экране для отладки
+          let dbg = document.getElementById("aim-debug");
+          if (!dbg) { dbg=document.createElement("div"); dbg.id="aim-debug"; dbg.style.cssText="position:fixed;top:50px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#0f0;padding:4px 10px;border-radius:8px;font-size:12px;z-index:999;pointer-events:none"; document.body.appendChild(dbg); }
+          dbg.textContent = `angle:${(angle*180/Math.PI).toFixed(0)}° player:${!!window.player} online:${!!window.onlineRunning}`;
           // Бот-режим
           if (window.player) window.player.angle = angle;
           // Онлайн-режим
           if (window.localMe) window.localMe.angle = angle;
-          // Отправляем угол на сервер в онлайне
-          if (window.onlineRunning && typeof doOnlineAction === "function") {
+          if (window.onlineRunning && typeof doOnlineAction_angle === "function") {
             doOnlineAction_angle(angle);
           }
         }
