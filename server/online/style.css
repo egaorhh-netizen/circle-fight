@@ -450,3 +450,105 @@ body.light .silence-skill { background: rgba(100,0,180,0.05) !important; }
   border-color: #444 !important; color: #444 !important;
   pointer-events: none;
 }
+
+/* ---- TOUCH CONTROLS ---- */
+#touch-controls {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 190px;
+  pointer-events: none;
+  z-index: 50;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 12px 16px;
+}
+
+#joystick-zone {
+  width: 150px; height: 150px;
+  position: relative;
+  pointer-events: all;
+  flex-shrink: 0;
+}
+
+#joystick-base {
+  width: 86px; height: 86px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.18);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+#joystick-knob {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  border: 2px solid rgba(255,255,255,0.7);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#action-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: all;
+}
+
+.action-row { display: flex; gap: 8px; }
+
+.touch-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: #fff; font-size: 1.1rem; font-weight: 700;
+  cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: background 0.1s, transform 0.08s;
+}
+.touch-btn:active { background: rgba(255,255,255,0.22); transform: scale(0.9); }
+
+.btn-attack { background: rgba(255,70,70,0.22); border-color: rgba(255,80,80,0.6); width: 66px; height: 66px; font-size: 1.4rem; }
+.btn-block  { background: rgba(68,170,255,0.18); border-color: rgba(68,170,255,0.5); }
+.btn-dash   { background: rgba(68,170,255,0.15); border-color: rgba(68,170,255,0.4); font-size: 0.9rem; }
+.btn-orb    { background: rgba(160,68,255,0.15); border-color: rgba(160,68,255,0.4); font-size: 0.9rem; }
+.btn-spin   { background: rgba(255,68,68,0.15);  border-color: rgba(255,68,68,0.4);  font-size: 0.9rem; }
+.btn-iron   { background: rgba(180,180,200,0.12); border-color: rgba(180,180,200,0.35); font-size: 0.9rem; }
+.btn-silence{ background: rgba(160,80,255,0.15); border-color: rgba(160,80,255,0.4); font-size: 0.9rem; }
+.touch-btn.used { opacity: 0.25; }
+
+/* Мобильная адаптация */
+@media (max-width: 900px) {
+  body { align-items: flex-start; overflow: hidden; }
+
+  #game-screen {
+    height: 100dvh;
+    padding-bottom: 200px;
+  }
+
+  #canvas {
+    width: 100% !important;
+    height: auto !important;
+    max-height: calc(100dvh - 250px);
+  }
+
+  #hud { padding: 4px 8px; }
+  .hp-bar-bg { height: 12px; }
+  #skill-bar { display: none !important; }
+  #shield-hint { display: none !important; }
+  #btn-menu { position: fixed; top: 6px; left: 8px; padding: 5px 12px; font-size: 0.78rem; z-index: 60; }
+
+  #menu, #settings, #gameover, #inventory, #shop { padding: 16px; width: 100%; max-width: 100%; }
+  #sword-grid { grid-template-columns: repeat(2, 1fr); }
+  #shop-grid  { grid-template-columns: repeat(2, 1fr); }
+  button { width: 100%; max-width: 320px; }
+}

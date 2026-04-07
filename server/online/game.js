@@ -693,6 +693,17 @@ function sendOnlineInput(){
     block:!!onlineKeys["KeyF"] && !shieldBroken,
     angle:myAngle
   };
+  // Джойстик на мобильных
+  if(typeof getJoyDelta === "function"){
+    const joy = getJoyDelta();
+    if(Math.abs(joy.x)>0.1||Math.abs(joy.y)>0.1){
+      inp.up    = joy.y < -0.2;
+      inp.down  = joy.y >  0.2;
+      inp.left  = joy.x < -0.2;
+      inp.right = joy.x >  0.2;
+    }
+  }
+  if(typeof isTbDown === "function") inp.block = inp.block || (isTbDown("block") && !shieldBroken);
   // Визуально запрещаем блок если щит сломан
   if(localMe) localMe.blocking = inp.block;
   socket.emit("input",{roomId,input:inp});

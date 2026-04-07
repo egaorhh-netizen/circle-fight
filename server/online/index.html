@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Circle Fight</title>
   <link rel="manifest" href="/manifest.json"/>
   <meta name="theme-color" content="#0e0e16"/>
@@ -157,6 +157,29 @@
       </div>
     </div>
     <canvas id="canvas"></canvas>
+
+    <!-- TOUCH CONTROLS (мобильные) -->
+    <div id="touch-controls">
+      <div id="joystick-zone">
+        <div id="joystick-base"><div id="joystick-knob"></div></div>
+      </div>
+      <div id="action-buttons">
+        <div class="action-row">
+          <button class="touch-btn btn-attack" ontouchstart="tbDown('attack')" ontouchend="tbUp('attack')">⚔</button>
+          <button class="touch-btn btn-block"  ontouchstart="tbDown('block')"  ontouchend="tbUp('block')">F</button>
+        </div>
+        <div class="action-row">
+          <button class="touch-btn btn-dash"  id="tb-dash"  ontouchstart="tbDown('dash')"  ontouchend="tbUp('dash')">Q</button>
+          <button class="touch-btn btn-orb"   id="tb-orb"   ontouchstart="tbDown('orb')"   ontouchend="tbUp('orb')">E</button>
+          <button class="touch-btn btn-spin"  id="tb-spin"  ontouchstart="tbDown('spin')"  ontouchend="tbUp('spin')">R</button>
+        </div>
+        <div class="action-row" id="tb-extra-row" style="display:none">
+          <button class="touch-btn btn-iron"    id="tb-iron"    ontouchstart="tbDown('ironshield')" ontouchend="tbUp('ironshield')">Z</button>
+          <button class="touch-btn btn-silence" id="tb-silence" ontouchstart="tbDown('silence')"    ontouchend="tbUp('silence')">X</button>
+        </div>
+      </div>
+    </div>
+
     <div id="skill-bar">
       <div id="dash-icon" class="skill-icon">Q</div>
       <div id="orb-icon" class="skill-icon orb-skill">E</div>
@@ -210,6 +233,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="swords.js"></script>
   <script src="game.js"></script>
+  <script src="touch.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
