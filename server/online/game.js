@@ -307,6 +307,13 @@ function updateBot(dt){
     if(keys["KeyS"]||keys["ArrowDown"])player.vy=spd;
     if(keys["KeyA"]||keys["ArrowLeft"])player.vx=-spd;
     if(keys["KeyD"]||keys["ArrowRight"])player.vx=spd;
+    // Джойстик на мобильных
+    if(typeof getJoyDelta==="function"){
+      const joy=getJoyDelta();
+      if(Math.abs(joy.x)>0.1||Math.abs(joy.y)>0.1){
+        player.vx=joy.x*spd; player.vy=joy.y*spd;
+      }
+    }
     player.x=clamp(player.x+player.vx,RADIUS,CANVAS_W-RADIUS);
     player.y=clamp(player.y+player.vy,RADIUS,CANVAS_H-RADIUS);
   }
