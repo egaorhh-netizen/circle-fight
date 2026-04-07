@@ -1,41 +1,57 @@
 // ---- TOUCH CONTROLS ----
 const isMobile = () => 'ontouchstart' in window || window.innerWidth <= 900;
 
-// Джойстик
 let joyId = null, joyOrigin = {x:0,y:0}, joyDelta = {x:0,y:0};
 const JOY_R = 55;
 window.getJoyDelta = () => joyDelta;
 
-// Кнопки
 const tbState = {};
 window.isTbDown = a => !!tbState[a];
+
 window.tbDown = function(action) {
   tbState[action] = true;
-  if (action === "attack")     { if (typeof playerAttack    === "function") playerAttack();    }
-  if (action === "dash")       { if (typeof doBotDash       === "function") doBotDash();       }
-  if (action === "orb")        { if (typeof doBotOrb        === "function") doBotOrb();        }
-  if (action === "spin")       { if (typeof doBotSpin       === "function") doBotSpin();       }
-  if (action === "ironshield") { if (typeof doBotIronShield === "function") doBotIronShield(); }
-  if (action === "silence")    { if (typeof doBotSilence    === "function") doBotSilence();    }
+  if (action === "attack") {
+    if (window.onlineRunning) doOnlineAction("attack");
+    else if (typeof doBotAttack === "function") doBotAttack();
+  }
+  if (action === "dash") {
+    if (window.onlineRunning) doOnlineAction("dash");
+    else if (typeof doBotDash === "function") doBotDash();
+  }
+  if (action === "orb") {
+    if (window.onlineRunning) doOnlineAction("orb");
+    else if (typeof doBotOrb === "function") doBotOrb();
+  }
+  if (action === "spin") {
+    if (window.onlineRunning) doOnlineAction("spin");
+    else if (typeof doBotSpin === "function") doBotSpin();
+  }
+  if (action === "ironshield") {
+    if (window.onlineRunning) doOnlineAction("ironshield");
+    else if (typeof doBotIronShield === "function") doBotIronShield();
+  }
+  if (action === "silence") {
+    if (window.onlineRunning) doOnlineAction("silence");
+    else if (typeof doBotSilence === "function") doBotSilence();
+  }
 };
 window.tbUp = a => { tbState[a] = false; };
 
 function init() {
   if (!isMobile()) return;
 
-  const zone  = document.getElementById("joystick-zone");
-  const base  = document.getElementById("joystick-base");
-  const knob  = document.getElementById("joystick-knob");
-  const tc    = document.getElementById("touch-controls");
-  const sb    = document.getElementById("skill-bar");
+  const zone = document.getElementById("joystick-zone");
+  const base = document.getElementById("joystick-base");
+  const knob = document.getElementById("joystick-knob");
+  const tc   = document.getElementById("touch-controls");
+  const sb   = document.getElementById("skill-bar");
 
   if (tc) tc.style.display = "flex";
   if (sb) sb.style.display = "none";
-
   if (!zone) return;
 
   function setKnob(dx, dy) {
-    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    if (knob) knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   }
 
   zone.addEventListener("touchstart", e => {
@@ -44,9 +60,7 @@ function init() {
     joyId = t.identifier;
     const r = zone.getBoundingClientRect();
     joyOrigin = { x: t.clientX - r.left, y: t.clientY - r.top };
-    base.style.left = joyOrigin.x + "px";
-    base.style.top  = joyOrigin.y + "px";
-    base.style.opacity = "1";
+    if (base) { base.style.left = joyOrigin.x+"px"; base.style.top = joyOrigin.y+"px"; base.style.opacity="1"; }
     setKnob(0, 0);
   }, { passive: false });
 
@@ -68,22 +82,19 @@ function init() {
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
-      joyId = null;
-      joyDelta = { x: 0, y: 0 };
+      joyId = null; joyDelta = {x:0,y:0};
       setKnob(0, 0);
-      base.style.opacity = "0.4";
+      if (base) base.style.opacity = "0.4";
     }
   }, { passive: false });
 
-  // Прицел — ТОЛЬКО правая половина экрана, НЕ зона кнопок
+  // Прицел — правая половина, только вне кнопок
   let aimId = null;
-  const actionBtns = document.getElementById("action-buttons");
 
   document.addEventListener("touchstart", e => {
     if (!window.gameRunning && !window.onlineRunning) return;
     for (const t of e.changedTouches) {
-      // Игнорируем касания на кнопках и джойстике
-      if (e.target.closest("#touch-controls")) continue;
+      if (e.target.closest && e.target.closest("#touch-controls")) continue;
       if (t.clientX > window.innerWidth * 0.45 && aimId === null) {
         aimId = t.identifier;
         doAim(t);
@@ -111,13 +122,11 @@ function init() {
 }
 
 function doAim(touch) {
-  // Находим активный canvas
-  const cv = (window.onlineRunning
+  const cv = window.onlineRunning
     ? document.getElementById("online-canvas")
-    : document.getElementById("canvas"));
+    : document.getElementById("canvas");
   if (!cv) return;
   const r = cv.getBoundingClientRect();
-  // Переводим экранные координаты в координаты canvas (760x480)
   const scaleX = cv.width  / r.width;
   const scaleY = cv.height / r.height;
   const mx = (touch.clientX - r.left) * scaleX;
@@ -126,7 +135,6 @@ function doAim(touch) {
   if (window.localMe) window.localMe.angle = Math.atan2(my - window.localMe.y, mx - window.localMe.x);
 }
 
-// Запуск
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
 } else {
