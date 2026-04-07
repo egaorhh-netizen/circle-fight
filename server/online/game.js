@@ -278,7 +278,7 @@ function updateBot(dt){
   const cheatSpd=parseFloat(localStorage.getItem("cheat_speed")||"0");
   // ---- END CHEATS ----
 
-  player.blocking=!!keys["KeyF"]&&(player.shieldHp||0)>0;
+  player.blocking=(!!keys["KeyF"]||window.isTbDown?.("block"))&&(player.shieldHp||0)>0;
   if(player.blocking)player.blockHoldTime=(player.blockHoldTime||0)+dt;else player.blockHoldTime=0;
   if(player.dashTimer>0){
     player.dashTimer-=dt;

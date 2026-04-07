@@ -1,15 +1,14 @@
 // ---- TOUCH CONTROLS ----
-const isMobile = () => window.innerWidth <= 900 || 'ontouchstart' in window;
+const isMobile = () => 'ontouchstart' in window || window.innerWidth <= 900;
 
-let joystickZone, joystickBase, joystickKnob;
-let joyActive = false, joyId = null;
-let joyOrigin = { x: 0, y: 0 };
-let joyDelta  = { x: 0, y: 0 };
-const JOY_RADIUS = 55;
-
+// Джойстик
+let joyId = null, joyOrigin = {x:0,y:0}, joyDelta = {x:0,y:0};
+const JOY_R = 55;
 window.getJoyDelta = () => joyDelta;
 
+// Кнопки
 const tbState = {};
+window.isTbDown = a => !!tbState[a];
 window.tbDown = function(action) {
   tbState[action] = true;
   if (action === "attack")     { if (typeof playerAttack    === "function") playerAttack();    }
@@ -19,116 +18,117 @@ window.tbDown = function(action) {
   if (action === "ironshield") { if (typeof doBotIronShield === "function") doBotIronShield(); }
   if (action === "silence")    { if (typeof doBotSilence    === "function") doBotSilence();    }
 };
-window.tbUp   = function(action) { tbState[action] = false; };
-window.isTbDown = function(action) { return !!tbState[action]; };
+window.tbUp = a => { tbState[a] = false; };
 
-function updateKnob(dx, dy) {
-  if (joystickKnob) joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-}
+function init() {
+  if (!isMobile()) return;
 
-function initJoystick() {
-  joystickZone = document.getElementById("joystick-zone");
-  joystickBase = document.getElementById("joystick-base");
-  joystickKnob = document.getElementById("joystick-knob");
-  if (!joystickZone) return;
+  const zone  = document.getElementById("joystick-zone");
+  const base  = document.getElementById("joystick-base");
+  const knob  = document.getElementById("joystick-knob");
+  const tc    = document.getElementById("touch-controls");
+  const sb    = document.getElementById("skill-bar");
 
-  joystickZone.addEventListener("touchstart", e => {
+  if (tc) tc.style.display = "flex";
+  if (sb) sb.style.display = "none";
+
+  if (!zone) return;
+
+  function setKnob(dx, dy) {
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  }
+
+  zone.addEventListener("touchstart", e => {
     e.preventDefault();
     const t = e.changedTouches[0];
-    joyActive = true; joyId = t.identifier;
-    const rect = joystickZone.getBoundingClientRect();
-    joyOrigin.x = t.clientX - rect.left;
-    joyOrigin.y = t.clientY - rect.top;
-    joystickBase.style.left = joyOrigin.x + "px";
-    joystickBase.style.top  = joyOrigin.y + "px";
-    joystickBase.style.opacity = "1";
-    updateKnob(0, 0);
+    joyId = t.identifier;
+    const r = zone.getBoundingClientRect();
+    joyOrigin = { x: t.clientX - r.left, y: t.clientY - r.top };
+    base.style.left = joyOrigin.x + "px";
+    base.style.top  = joyOrigin.y + "px";
+    base.style.opacity = "1";
+    setKnob(0, 0);
   }, { passive: false });
 
-  joystickZone.addEventListener("touchmove", e => {
+  zone.addEventListener("touchmove", e => {
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
-      const rect = joystickZone.getBoundingClientRect();
-      let dx = t.clientX - rect.left - joyOrigin.x;
-      let dy = t.clientY - rect.top  - joyOrigin.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > JOY_RADIUS) { dx = dx/dist*JOY_RADIUS; dy = dy/dist*JOY_RADIUS; }
-      joyDelta.x = dx / JOY_RADIUS;
-      joyDelta.y = dy / JOY_RADIUS;
-      updateKnob(dx, dy);
+      const r = zone.getBoundingClientRect();
+      let dx = t.clientX - r.left - joyOrigin.x;
+      let dy = t.clientY - r.top  - joyOrigin.y;
+      const d = Math.hypot(dx, dy);
+      if (d > JOY_R) { dx = dx/d*JOY_R; dy = dy/d*JOY_R; }
+      joyDelta = { x: dx/JOY_R, y: dy/JOY_R };
+      setKnob(dx, dy);
     }
   }, { passive: false });
 
-  joystickZone.addEventListener("touchend", e => {
+  zone.addEventListener("touchend", e => {
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
-      joyActive = false;
-      joyDelta.x = 0; joyDelta.y = 0;
-      updateKnob(0, 0);
-      joystickBase.style.opacity = "0.4";
+      joyId = null;
+      joyDelta = { x: 0, y: 0 };
+      setKnob(0, 0);
+      base.style.opacity = "0.4";
     }
+  }, { passive: false });
+
+  // Прицел — ТОЛЬКО правая половина экрана, НЕ зона кнопок
+  let aimId = null;
+  const actionBtns = document.getElementById("action-buttons");
+
+  document.addEventListener("touchstart", e => {
+    if (!window.gameRunning && !window.onlineRunning) return;
+    for (const t of e.changedTouches) {
+      // Игнорируем касания на кнопках и джойстике
+      if (e.target.closest("#touch-controls")) continue;
+      if (t.clientX > window.innerWidth * 0.45 && aimId === null) {
+        aimId = t.identifier;
+        doAim(t);
+      }
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchmove", e => {
+    if (!window.gameRunning && !window.onlineRunning) return;
+    for (const t of e.changedTouches) {
+      if (t.identifier === aimId) doAim(t);
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchend", e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === aimId) aimId = null;
+    }
+  }, { passive: true });
+
+  // Блокируем скролл в игре
+  document.addEventListener("touchmove", e => {
+    if (e.target.closest && e.target.closest("#game-screen")) e.preventDefault();
   }, { passive: false });
 }
 
-// Прицел — правая половина экрана
-let aimTouchId = null;
-document.addEventListener("touchstart", e => {
-  if (!window.gameRunning && !window.onlineRunning) return;
-  for (const t of e.changedTouches) {
-    if (t.clientX > window.innerWidth * 0.45 && aimTouchId === null) {
-      aimTouchId = t.identifier;
-      updateAim(t);
-    }
-  }
-}, { passive: true });
-
-document.addEventListener("touchmove", e => {
-  if (!window.gameRunning && !window.onlineRunning) return;
-  for (const t of e.changedTouches) {
-    if (t.identifier === aimTouchId) updateAim(t);
-  }
-}, { passive: true });
-
-document.addEventListener("touchend", e => {
-  for (const t of e.changedTouches) {
-    if (t.identifier === aimTouchId) aimTouchId = null;
-  }
-}, { passive: true });
-
-function updateAim(touch) {
-  const cv = document.getElementById("canvas") || document.getElementById("online-canvas");
+function doAim(touch) {
+  // Находим активный canvas
+  const cv = (window.onlineRunning
+    ? document.getElementById("online-canvas")
+    : document.getElementById("canvas"));
   if (!cv) return;
   const r = cv.getBoundingClientRect();
-  const scaleX = cv.width / r.width;
+  // Переводим экранные координаты в координаты canvas (760x480)
+  const scaleX = cv.width  / r.width;
   const scaleY = cv.height / r.height;
   const mx = (touch.clientX - r.left) * scaleX;
   const my = (touch.clientY - r.top)  * scaleY;
-  if (window.player) window.player.angle = Math.atan2(my - window.player.y, mx - window.player.x);
+  if (window.player)  window.player.angle  = Math.atan2(my - window.player.y,  mx - window.player.x);
   if (window.localMe) window.localMe.angle = Math.atan2(my - window.localMe.y, mx - window.localMe.x);
 }
 
-function updateTouchVisibility() {
-  const tc = document.getElementById("touch-controls");
-  const sb = document.getElementById("skill-bar");
-  if (!tc) return;
-  const mob = isMobile();
-  tc.style.display = mob ? "flex" : "none";
-  if (sb) sb.style.display = mob ? "none" : "flex";
-}
-
-window.addEventListener("resize", updateTouchVisibility);
-
-// Блокируем скролл в игре
-document.addEventListener("touchmove", e => {
-  if (e.target.closest && e.target.closest("#game-screen")) e.preventDefault();
-}, { passive: false });
-
-// Инициализация после загрузки DOM
+// Запуск
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => { initJoystick(); updateTouchVisibility(); });
+  document.addEventListener("DOMContentLoaded", init);
 } else {
-  initJoystick();
-  updateTouchVisibility();
+  init();
 }
