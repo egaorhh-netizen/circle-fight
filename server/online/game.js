@@ -174,6 +174,12 @@ function buildInventory() {
 // ======== BOT GAME ========
 let canvas,ctx,animId,lastTime=0,keys={},player,bot,gameRunning=false,particles=[],orbs=[];
 
+// Глобальная функция для touch.js
+function setPlayerAngle(angle){
+  if(gameRunning && player) player.angle = angle;
+  if(onlineRunning) doOnlineAction_angle(angle);
+}
+
 function botStats(){
   const tier=Math.min(Math.floor(ratingBot/100), 7); // макс тир 7 = 700 ммр
   const tc=Math.min(tier,5),ag=tier>=3;
