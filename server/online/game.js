@@ -209,6 +209,7 @@ function startBotGame(){
     ironShieldUsed:false,ironShieldTimer:0,ironShieldCooldown:6000+Math.random()*4000,
     silenceTimer:0};
   particles=[];orbs=[];gameRunning=true;
+  document.getElementById("touch-controls")?.classList.add("game-active");
   updateBotHUD();
   canvas.addEventListener("mousedown",onMouseDown);
   canvas.addEventListener("mousemove",onMouseMove);
@@ -220,6 +221,7 @@ function stopBotGame(){
   gameRunning=false;if(animId){cancelAnimationFrame(animId);animId=null;}
   if(canvas){canvas.removeEventListener("mousedown",onMouseDown);canvas.removeEventListener("mousemove",onMouseMove);}
   keys={};
+  document.getElementById("touch-controls")?.classList.remove("game-active");
 }
 
 function restartGame(){
@@ -568,6 +570,7 @@ function startOnlineGame(){
   onlineCanvas=document.getElementById("online-canvas");
   onlineCanvas.width=CANVAS_W;onlineCanvas.height=CANVAS_H;onlineCtx=onlineCanvas.getContext("2d");
   onlineParticles=[];myDashUsed=false;myOrbUsed=false;mySpinUsed=false;myIronShieldUsed=false;myIronShieldTimer=0;mySilenceUsed=false;onlineRunning=true;
+  document.getElementById("touch-controls")?.classList.add("game-active");
   oppBuffer=[];oppRendered=null;localMe=null;
   // Показать FPS оверлей если включён
   const ov=document.getElementById("fps-overlay");
@@ -590,6 +593,7 @@ function stopOnlineGame(){
   if(onlineCanvas){onlineCanvas.removeEventListener("mousemove",onOnlineMouseMove);onlineCanvas.removeEventListener("mousedown",onOnlineMouseDown);}
   document.removeEventListener("keydown",onOnlineKeyDown);document.removeEventListener("keyup",onOnlineKeyUp);
   onlineKeys={};
+  document.getElementById("touch-controls")?.classList.remove("game-active");
 }
 
 let onlineKeys={};
